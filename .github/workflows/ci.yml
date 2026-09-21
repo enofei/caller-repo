@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@bef4d2c16551213fc388a1b7017e2b2e5adb3635  # v1.0.0
+    with:
+      node-version: '20'
+      test-command: 'npm run test:ci'
+      security-checks: true
