@@ -1,57 +1,27 @@
 # caller-repo
 
-A sample Node.js application that exercises the organization's shared CI pipeline:
+Node.js application using the org reusable workflow ([enofei/reusable-build-test](https://github.com/enofei/reusable-build-test)) for CI.
 
-**[`enofei/reusable-build-test`](https://github.com/enofei/reusable-build-test)** → `.github/workflows/build-test.yml`
-
-## How CI works
-
-[`ci.yml`](.github/workflows/ci.yml) contains a single job that *calls* the org reusable workflow instead of defining build steps locally:
+`.github/workflows/ci.yml`:
 
 ```yaml
 jobs:
   build-and-test:
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@8acbac233f3f35d5ed829962e12c00eda7373641  # v1.1.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@59e8e1fb94b462eae54949475096c923b930d592  # v1.0.0
     with:
-      node-version: '20'
+      node-version: '24'
       test-command: 'npm run test:ci'
       security-checks: true
 ```
 
-The reusable workflow then runs, on every pull request to `main` / `develop`:
+On every pull request to `main`/`develop` it runs `npm ci`, `npm run build`, `npm run test:ci`, and `npm audit --audit-level=high`.
 
-1. `npm ci` — install from `package-lock.json`
-2. `npm run build` — bundle `src/` into `dist/`
-3. `npm run test:ci` — Node's built-in test runner
-4. `npm audit --audit-level=high` — security audit (`security-checks: true`)
-
-## Contract with the reusable workflow
-
-The reusable workflow assumes this repository provides:
-
-- `package.json` **and** `package-lock.json` (npm caching fails without the lockfile)
-- a `build` script
-- the script named in `test-command` (`test:ci`)
-
-## Local development
+Requires Node.js >= 24. No third-party dependencies.
 
 ```bash
-npm ci              # install dependencies
-npm run build       # build dist/
-npm run test:ci     # run tests (same as CI)
-npm audit --audit-level=high
+npm ci
+npm run build
+npm run test:ci
 ```
 
-Requires Node.js >= 20. There are no third-party runtime dependencies.
-
-## Updating the workflow pin
-
-The workflow reference is SHA-pinned to a release tag of `reusable-build-test` (with a `# vX.Y.Z` comment). To resolve a new tag to its commit SHA, run the reusable repo's helper script:
-
-```bash
-git clone https://github.com/enofei/reusable-build-test.git
-./reusable-build-test/scripts/resolve-action-sha.sh enofei/reusable-build-test v1.2.0
-# prints: <commit-sha>  # v1.2.0
-```
-
-Dependabot also proposes pin updates via weekly PRs.
+CI is SHA-pinned to a `reusable-build-test` release tag. Resolve a tag to its commit SHA with that repo's `scripts/resolve-action-sha.sh`; Dependabot also proposes pin updates weekly.
