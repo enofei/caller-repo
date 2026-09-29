@@ -1,0 +1,16 @@
+{
+  "name": "caller-repo",
+  "version": "1.0.0",
+  "description": "Sample Node.js app that exercises the org reusable build & test workflow",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "test": "node --test",
+    "test:ci": "node --test --test-reporter=spec"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
