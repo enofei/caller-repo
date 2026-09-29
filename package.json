@@ -1,7 +1,7 @@
 {
   "name": "caller-repo",
   "version": "1.0.0",
-  "description": "Sample Node.js app that exercises the org reusable build & test workflow",
+  "description": "Node.js application using the org reusable build & test workflow",
   "private": true,
   "main": "dist/index.js",
   "scripts": {

@@ -1,8 +1,5 @@
 'use strict';
 
-/**
- * Convert arbitrary text into a URL-safe slug.
- */
 function slugify(text) {
   return String(text)
     .toLowerCase()
@@ -11,9 +8,6 @@ function slugify(text) {
     .replace(/^-+|-+$/g, '');
 }
 
-/**
- * Simple greeting used by the CLI entry point.
- */
 function greet(name) {
   return `Hello, ${name || 'world'}!`;
 }
