@@ -11,7 +11,7 @@ A sample Node.js application that exercises the organization's shared CI pipelin
 ```yaml
 jobs:
   build-and-test:
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@5c82f30a632c051641a32c651017fbf7d39ccfe6  # v1.1.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@59e8e1fb94b462eae54949475096c923b930d592  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
@@ -52,8 +52,8 @@ The workflow reference is SHA-pinned to a release tag of `reusable-build-test` (
 
 ```bash
 git clone https://github.com/enofei/reusable-build-test.git
-./reusable-build-test/scripts/resolve-action-sha.sh enofei/reusable-build-test v1.1.0
-# prints: <commit-sha>  # v1.1.0
+./reusable-build-test/scripts/resolve-action-sha.sh enofei/reusable-build-test v1.0.0
+# prints: <commit-sha>  # v1.0.0
 ```
 
 Dependabot also proposes pin updates via weekly PRs.
