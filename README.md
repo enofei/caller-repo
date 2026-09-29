@@ -11,9 +11,9 @@ A sample Node.js application that exercises the organization's shared CI pipelin
 ```yaml
 jobs:
   build-and-test:
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@8acbac233f3f35d5ed829962e12c00eda7373641  # v1.1.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@fe81805bcfb2d55d985791e4be17b118b3c81dfa  # v1.2.0
     with:
-      node-version: '20'
+      node-version: '24'
       test-command: 'npm run test:ci'
       security-checks: true
 ```
@@ -24,6 +24,8 @@ The reusable workflow then runs, on every pull request to `main` / `develop`:
 2. `npm run build` — bundle `src/` into `dist/`
 3. `npm run test:ci` — Node's built-in test runner
 4. `npm audit --audit-level=high` — security audit (`security-checks: true`)
+
+Node.js **24** (current Active LTS) is used consistently across the reusable workflow's default, this repository's `ci.yml`, and the `engines` field in `package.json`.
 
 ## Contract with the reusable workflow
 
@@ -42,7 +44,7 @@ npm run test:ci     # run tests (same as CI)
 npm audit --audit-level=high
 ```
 
-Requires Node.js >= 20. There are no third-party runtime dependencies.
+Requires Node.js >= 24 (latest LTS). There are no third-party runtime dependencies.
 
 ## Updating the workflow pin
 
@@ -50,8 +52,8 @@ The workflow reference is SHA-pinned to a release tag of `reusable-build-test` (
 
 ```bash
 git clone https://github.com/enofei/reusable-build-test.git
-./reusable-build-test/scripts/resolve-action-sha.sh enofei/reusable-build-test v1.2.0
-# prints: <commit-sha>  # v1.2.0
+./reusable-build-test/scripts/resolve-action-sha.sh enofei/reusable-build-test v1.3.0
+# prints: <commit-sha>  # v1.3.0
 ```
 
 Dependabot also proposes pin updates via weekly PRs.

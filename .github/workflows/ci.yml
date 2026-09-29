@@ -11,8 +11,8 @@ permissions:
 jobs:
   build-and-test:
     name: Build & Test
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@8acbac233f3f35d5ed829962e12c00eda7373641  # v1.1.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@fe81805bcfb2d55d985791e4be17b118b3c81dfa  # v1.2.0
     with:
-      node-version: '20'
+      node-version: '24'
       test-command: 'npm run test:ci'
       security-checks: true
