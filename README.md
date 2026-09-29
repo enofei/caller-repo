@@ -25,3 +25,7 @@ npm run test:ci
 ```
 
 CI is SHA-pinned to a `reusable-build-test` release tag. Resolve a tag to its commit SHA with that repo's `scripts/resolve-action-sha.sh`; Dependabot also proposes pin updates weekly.
+
+## Branch policy
+
+Work happens on `dev`. `main` accepts only commits with verified signatures — enforced by branch protection with administrators included.
