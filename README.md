@@ -37,6 +37,21 @@ inputs.
 - Pull requests can be merged to `main`; GitHub signs its own merge commits, so they pass
   the gate.
 
+```mermaid
+flowchart TD
+    A["Change made on dev"] --> B["git commit, signed automatically"]
+    B --> C{"Signature verified by GitHub?"}
+    C -->|"no: unsigned or unknown key"| D["Push to main rejected: GH006"]
+    C -->|yes| E{"Route to main"}
+    E -->|direct| F["git push origin dev:main"]
+    E -->|"pull request"| G["PR: dev to main"]
+    G --> H["CI runs reusable workflow: install, build, test, audit"]
+    H -->|fail| A
+    H -->|pass| I["Merge, GitHub-signed merge commit"]
+    F --> J["main updated, verified signatures only"]
+    I --> J
+```
+
 ## Application layout
 
 | Path | Purpose |
