@@ -1,14 +1,16 @@
 # Plan: DVWA + Org SAST Pipeline
 
-Scope: vendor DVWA into this repo as SAST test content, then add a reusable
-SAST workflow (CodeQL + Semgrep) and call it from this repo's CI.
+Scope: vendor DVWA into this repo as SAST test content, then build this org's
+CI here: a reusable build/test workflow, a Semgrep SAST scan, and an
+OPA/conftest policy gate, enforced on `main` with required status checks.
 
 ## Decisions
 
 - DVWA lives in subdirectory `dvwa/` (Node app/contract stays at root)
 - DVWA's `.github/` is stripped (excludes `vulnerable.yml` secret-leak demo,
   `docker-image.yml`, and the rest of its workflows)
-- SAST engine: **both CodeQL and Semgrep**
+- SAST engine: **both CodeQL and Semgrep** (revised in Phase 3: Semgrep only,
+  CodeQL has no PHP support)
 - SAST job runs in the **caller repo only** (reusable repo has no self-CI by design)
 - Hard rule: DVWA is cloned and copied as files only, no docker, no apache/php
   install, no DVWA scripts, nothing executed. SAST is static analysis only.
@@ -197,6 +199,17 @@ Check names confirmed live: `Build & Test / Build & Test`,
    Probe reverted; `git diff origin/main origin/dev` empty.
 7. [x] `Semgrep OSS` (code-scanning PR decoration) reports dvwa alerts
    (advisory, deliberately **not** required)
+
+### Post-release maintenance (after Phase 5)
+
+- Caller PRs: #11 runbook/`plan.md` fixes, #12 README security-model section,
+  #14 comment/style cleanup, #15 repin (all merged; `dev` synced to `main` each time)
+- Reusable PRs: #5 README for `sast.yml`/`policy.yml` + SARIF rule-table
+  validation, #6/#8 example repins, #7 style cleanup
+- Tag `v1.0.0` re-cut on each reusable release: `84333a7` → `4584e68` →
+  `c860fa6` → `de6baab` (final). After the last re-cut all nine pin
+  references across both repos resolve to `de6baab`; workflow files have
+  been identical since `c860fa6` (docs-only deltas).
 
 ### Break-glass runbook (required status checks on main)
 
