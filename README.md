@@ -15,17 +15,48 @@ both repositories enforce identically.
 ```yaml
 jobs:
   build-and-test:
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@84333a75913b870266360fe802b5c7a56ca79564  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@4584e684c283ef22f6fdc2a9d55846840edbeeda  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
       security-checks: true
+
+  sast:
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@4584e684c283ef22f6fdc2a9d55846840edbeeda  # v1.0.0
+    with:
+      semgrep-config: 'policy/semgrep-rules'
+
+  policy:
+    if: ${{ always() }}
+    needs: [sast]
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@4584e684c283ef22f6fdc2a9d55846840edbeeda  # v1.0.0
+    with:
+      mode: 'enforce-critical'
+      policy-path: 'policy/'
 ```
 
-On every pull request to `main` or `dev`, the reusable workflow checks out this
-repository, installs from the lockfile, builds, runs the tests, and audits dependencies.
-The steps themselves are maintained in the reusable repository; this file only supplies
-inputs.
+On every pull request, three jobs run:
+
+1. **Build & Test** — install from the lockfile, build, test, audit deps.
+2. **SAST / Semgrep** — digest-pinned Semgrep container scans the repository
+   with the rule bundle frozen in `policy/semgrep-rules/` (nothing is fetched
+   from the network at scan time) and uploads SARIF to code scanning.
+3. **Policy / Gate** — fail-closed OPA gate: downloads the SARIF artifact,
+   verifies conftest against an embedded SHA-256, runs the policy unit tests,
+   then evaluates `policy/sast.rego`:
+
+| Mode | Behavior |
+|---|---|
+| `warn` | advisory only — findings annotate the run, never block |
+| `enforce-critical` | blocks on first-party findings at error level |
+| `enforce-full` | blocks on every first-party finding, any level |
+
+`dvwa/**` is exempt from blocking (it is intentionally vulnerable SAST test
+content) but stays visible as warnings. **`main` is clamped to
+`enforce-critical` inside the reusable workflow** — callers cannot relax the
+mode for merges. Malformed or missing scan results fail the gate (red, never
+green). `Policy / Gate` and `SAST / Semgrep` are required status checks on
+`main` (break-glass procedure: `plan.md`).
 
 ## Branch and signing policy
 
@@ -62,6 +93,17 @@ flowchart TD
 
 No third-party runtime dependencies. Requires Node.js 24 (current LTS); `engines` is set to
 `>=24`.
+
+## Vendored third-party code
+
+| Path | Upstream | License | Purpose |
+|---|---|---|---|
+| `dvwa/` | [digininja/DVWA](https://github.com/digininja/DVWA) (`43b0f8b`) | GPL-3.0 (`dvwa/COPYING.txt`) | Intentionally vulnerable PHP app used as SAST test content |
+
+`dvwa/` is an unmodified copy of DVWA's source with `.git/` and `.github/` removed; no
+upstream workflows or automation run in this repository. It is **not deployed, installed,
+or executed here** — only statically analyzed by CI. The rest of this repository remains
+MIT-licensed; DVWA's files stay under GPL-3.0 as shipped.
 
 ## Local development
 

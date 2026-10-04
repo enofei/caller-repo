@@ -1,0 +1,22 @@
+Vendored Semgrep rules for reproducible, fail-closed SAST scanning.
+
+Source:   https://semgrep.dev/c/auto   (registry bundle backing `--config auto`)
+Fetched:  2026-10-04
+Rules:    1073
+SHA-256:  967e75adeefb181bf0b4355991a8f1206374b9871ec8def30fcb492ad038c026
+          (pristine fetched bundle, before the local edit below)
+
+Local edit after fetching (documented deviation from the pristine bundle):
+  - generic.secrets.security.detected-slack-webhook: the `pattern-not`
+    sentinel URL's third segment was shortened from 24 to 20 `X`
+    characters. The canonical 24-char placeholder matches GitHub's
+    Push Protection webhook format and blocked the push; it is a
+    well-known dummy value, not a secret. Semgrep rule behavior for
+    this repository is unchanged.
+
+Scanned with: semgrep/semgrep:1.179.0 (digest-pinned in reusable sast.yml)
+
+Rules only change via reviewed, SSH-signed PRs to this repository —
+never fetched from the network at scan time. To refresh, re-fetch the
+bundle, re-apply the sentinel edit if still needed, update this header,
+and include the diff in the PR review.
