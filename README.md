@@ -5,10 +5,10 @@ workflow: [enofei/reusable-build-test](https://github.com/enofei/reusable-build-
 
 ## Why this repository exists
 
-Two goals. First, prove that adopting the shared pipeline is a one-job change: everything
-CI-related lives in `.github/workflows/ci.yml`, and the rest of the repository is ordinary
-application code. Second, act as the testbed for this org's branch and signing policy, which
-both repositories enforce identically.
+This repository has two purposes: prove that adopting the shared pipeline is a one-job
+change (everything CI-related lives in `.github/workflows/ci.yml`, and the rest of the
+repository is ordinary application code), and act as the testbed for this org's branch and
+signing policy, which both repositories enforce identically.
 
 ## How CI works
 
@@ -37,24 +37,24 @@ jobs:
 
 On every pull request, three jobs run:
 
-1. **Build & Test** — install from the lockfile, build, test, audit deps.
-2. **SAST / Semgrep** — digest-pinned Semgrep container scans the repository
+1. **Build & Test**: install from the lockfile, build, test, audit deps.
+2. **SAST / Semgrep**: a digest-pinned Semgrep container scans the repository
    with the rule bundle frozen in `policy/semgrep-rules/` (nothing is fetched
    from the network at scan time) and uploads SARIF to code scanning.
-3. **Policy / Gate** — fail-closed OPA gate: downloads the SARIF artifact,
+3. **Policy / Gate**: a fail-closed OPA gate that downloads the SARIF artifact,
    verifies conftest against an embedded SHA-256, runs the policy unit tests,
    then evaluates `policy/sast.rego`:
 
 | Mode | Behavior |
 |---|---|
-| `warn` | advisory only — findings annotate the run, never block |
+| `warn` | advisory only: findings annotate the run, never block |
 | `enforce-critical` | blocks on first-party findings at error level |
 | `enforce-full` | blocks on every first-party finding, any level |
 
 `dvwa/**` is exempt from blocking (it is intentionally vulnerable SAST test
-content) but stays visible as warnings. **`main` is clamped to
-`enforce-critical` inside the reusable workflow** — callers cannot relax the
-mode for merges. Malformed or missing scan results fail the gate (red, never
+content) but stays visible as warnings. `main` is clamped to `enforce-critical`
+inside the reusable workflow, so callers cannot relax the mode for merges.
+Malformed or missing scan results fail the gate (red, never
 green). `Policy / Gate` and `SAST / Semgrep` are required status checks on
 `main` (break-glass procedure: `plan.md`).
 
@@ -66,7 +66,7 @@ Protection works at two layers: the application and the repository itself.
 
 | Threat | Control |
 |---|---|
-| Vulnerable code (injection, unsafe `eval`, …) committed | SAST scans every PR; `Policy / Gate` blocks first-party findings **before** merge |
+| Vulnerable code (injection, unsafe `eval`, ...) committed | SAST scans every PR; `Policy / Gate` blocks first-party findings before merge |
 | Known-vulnerable dependencies | `npm audit` fails the build; Dependabot opens update PRs (7-day cooldown) |
 | Findings in intentional test content creating noise | `dvwa/**` exempt from blocking, still visible as warnings |
 
@@ -84,9 +84,9 @@ Protection works at two layers: the application and the repository itself.
 
 ### Defense in depth
 
-`signature check → SAST scan → policy gate → GitHub enforcement` — four
-independent layers; compromising one leaves the others standing. The
-pipeline follows established supply-chain practice: immutable pins,
+`signature check → SAST scan → policy gate → GitHub enforcement`. Four
+independent layers: compromising one leaves the others standing. The
+pipeline follows established supply-chain practice with immutable pins,
 fail-secure defaults, and tooling verified before it runs.
 
 ## Branch and signing policy
@@ -94,8 +94,8 @@ fail-secure defaults, and tooling verified before it runs.
 - `dev` is where work happens. Push to it freely.
 - `main` accepts only commits with verified signatures. Branch protection applies to
   administrators too, so unsigned or unverified pushes are rejected by GitHub with `GH006`.
-- **Required status checks on `main`:** `Policy / Gate` and `SAST / Semgrep`
-  (strict — branch must be up to date). A direct push of a commit that has
+- Two status checks are required on `main`: `Policy / Gate` and `SAST / Semgrep`
+  (strict, so the branch must be up to date). A direct push of a commit that has
   not passed both checks is rejected with `GH006` ("2 of 2 required status
   checks are expected"); the admin bypass flag is refused as well. In
   practice, changes land through a pull request. Break-glass (gate outage):
@@ -103,7 +103,7 @@ fail-secure defaults, and tooling verified before it runs.
 - Signing is automatic on a configured machine: `commit.gpgsign=true` with an SSH signing
   key registered on the GitHub account. `git verify-commit HEAD` checks a commit locally.
 - Pull requests can be merged to `main`; GitHub signs its own merge commits, so they pass
-  the signature gate — and still have to pass the policy gate.
+  the signature gate, but still have to pass the policy gate.
 
 ```mermaid
 flowchart TD
@@ -137,7 +137,7 @@ No third-party runtime dependencies. Requires Node.js 24 (current LTS); `engines
 
 `dvwa/` is an unmodified copy of DVWA's source with `.git/` and `.github/` removed; no
 upstream workflows or automation run in this repository. It is **not deployed, installed,
-or executed here** — only statically analyzed by CI. The rest of this repository remains
+or executed here**; CI only analyzes it statically. The rest of this repository remains
 MIT-licensed; DVWA's files stay under GPL-3.0 as shipped.
 
 ## Local development

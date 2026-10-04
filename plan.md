@@ -10,7 +10,7 @@ SAST workflow (CodeQL + Semgrep) and call it from this repo's CI.
   `docker-image.yml`, and the rest of its workflows)
 - SAST engine: **both CodeQL and Semgrep**
 - SAST job runs in the **caller repo only** (reusable repo has no self-CI by design)
-- Hard rule: DVWA is cloned and copied as files only — no docker, no apache/php
+- Hard rule: DVWA is cloned and copied as files only, no docker, no apache/php
   install, no DVWA scripts, nothing executed. SAST is static analysis only.
 
 ## Workflow rules (org policy)
@@ -22,12 +22,12 @@ SAST workflow (CodeQL + Semgrep) and call it from this repo's CI.
   merging → repin caller)
 - Dependabot (github-actions, weekly Mon, `ci` prefix) configured in both repos
 
-## Phase 0 — housekeeping (both repos)
+## Phase 0: housekeeping (both repos)
 
 `dev` is behind `main` in both repos after local merges. Fast-forward
 `dev` → `main` on each, push, so all new work starts current.
 
-## Phase 1 — clone DVWA (read-only)
+## Phase 1: clone DVWA (read-only)
 
 ```
 git clone https://github.com/digininja/DVWA.git ~/Projects/DVWA
@@ -38,19 +38,19 @@ git clone https://github.com/digininja/DVWA.git ~/Projects/DVWA
 - Intentionally vulnerable (upstream SECURITY.md: do not report the vulns);
   never deploy internet-facing
 
-## Phase 2 — vendor into caller-repo (`dev`)
+## Phase 2: vendor into caller-repo (`dev`)
 
 - `rsync -a --exclude .git --exclude .github/ ~/Projects/DVWA/ dvwa/`
   - ~252 files; keeps `COPYING.txt` (GPL requires it)
   - drops all 5 of DVWA's workflows
-- Caller `README.md`: add "Vendored third-party code" note — `dvwa/` is
+- Caller `README.md`: add "Vendored third-party code" note: `dvwa/` is
   unmodified GPL-3.0 DVWA from `digininja/DVWA` for SAST test content;
   the repo's own code stays MIT
 - Verify root package contract untouched:
   `npm ci && npm run build && npm run test:ci` green
 - Signed commit → push `dev` → **pause for review**
 
-## Phase 3 — reusable repo: new `sast.yml` (`dev`)
+## Phase 3: reusable repo: new `sast.yml` (`dev`)
 
 New `.github/workflows/sast.yml` with `workflow_call`, matching
 `build-test.yml` conventions (ubuntu-24.04, `contents: read`, SHA-pinned
@@ -80,9 +80,9 @@ Jobs:
    findings; a blocking SAST would make every future PR unmergeable.
    A fail-threshold input can be added later if wanted.
 
-Push `dev`. Tested via a caller PR (Phase 4) — no self-CI on the reusable repo.
+Push `dev`. Tested via a caller PR (Phase 4); the reusable repo has no self-CI.
 
-## Phase 4 — caller calls SAST (`dev`, same PR as Phase 2)
+## Phase 4: caller calls SAST (`dev`, same PR as Phase 2)
 
 Add a second job to `.github/workflows/ci.yml`:
 
@@ -104,7 +104,7 @@ Add a second job to `.github/workflows/ci.yml`:
     Security → Code scanning (positive control)
 - Verify via `gh pr checks` + `gh api repos/.../code-scanning/alerts`
 
-## Phase 5 — release & repin
+## Phase 5: release & repin
 
 1. Reusable: PR `dev` → `main`, merge (GitHub-signed)
 2. Re-cut `v1.0.0` → new main head; confirm with
@@ -123,9 +123,9 @@ Add a second job to `.github/workflows/ci.yml`:
 | GPL-3.0 code in an MIT repo | `COPYING.txt` kept + README attribution; dual-license noted |
 | First CodeQL run slow (~2–5 min) | One-time DB build; subsequent runs cached |
 | Semgrep `--config auto` needs registry egress | Available on GH-hosted runners |
-| DVWA workflows executing in this repo | Stripped in Phase 2 — never uploaded |
+| DVWA workflows executing in this repo | Stripped in Phase 2, never uploaded |
 
-## Phases 6–8 — OPA policy gate (executed)
+## Phases 6–8: OPA policy gate (executed)
 
 Reusable repo (`dev`):
 
@@ -144,15 +144,15 @@ Reusable repo (`dev`):
 
 Caller repo (`dev`):
 
-- `policy/sast.rego` — modes `warn` / `enforce-critical` / `enforce-full`;
+- `policy/sast.rego`: modes `warn` / `enforce-critical` / `enforce-full`;
   `dvwa/**` never denied (visible as warnings); severity from SARIF
   `result.level` else rule `defaultConfiguration.level` else `warning`;
   malformed input / unknown mode → deny (fail-closed). 10 unit tests.
-- `policy/semgrep-rules/` — frozen `https://semgrep.dev/c/auto` bundle
+- `policy/semgrep-rules/`: frozen `https://semgrep.dev/c/auto` bundle
   (1073 rules; sentinel edit documented in `SOURCE.txt`)
-- `.github/dependabot.yml` — `cooldown: default-days: 7` (clears the only
+- `.github/dependabot.yml`: `cooldown: default-days: 7` (clears the only
   first-party finding)
-- `ci.yml` — third job `policy` (`name: Policy`, `if: always()`,
+- `ci.yml`: third job `policy` (`name: Policy`, `if: always()`,
   `needs: [sast]`) calling `policy.yml`; pull_request-only trigger
   (push trigger used for Phase 8, removed after: same-SHA duplicate
   `Policy / Gate` checks could race a green dev-push against a red PR gate)
@@ -171,7 +171,7 @@ Phase 8 evidence (each on real CI, recorded in `progress.md`):
 Check names confirmed live: `Build & Test / Build & Test`,
 `SAST / Semgrep`, `Policy / Gate`.
 
-## Phase 5 — release, repin, enforcement (executed)
+## Phase 5: release, repin, enforcement (executed)
 
 1. [x] Reusable: PR #4 `dev` → `main` merged → `4584e68`
 2. [x] Re-cut rolling `v1.0.0` → `4584e68` (verified via `resolve-action-sha.sh`)
@@ -180,7 +180,7 @@ Check names confirmed live: `Build & Test / Build & Test`,
    status checks (`POST`/`PUT` on the sub-resource both 404 while
    disabled; docs only offer `GET`/`PATCH`/`DELETE`), so enabling used
    the full `PUT /branches/main/protection` with a body mirroring the
-   GET snapshot exactly plus one added key — then verify-diff:
+   GET snapshot exactly plus one added key, then verify-diff:
    - `required_status_checks` added: `strict: true`, contexts
      `Policy / Gate` + `SAST / Semgrep` (auto-bound to app 15368,
      GitHub Actions)
@@ -189,14 +189,14 @@ Check names confirmed live: `Build & Test / Build & Test`,
      false`, `lock_branch/…: false`, reviews/restrictions still absent
 5. [x] Direct-push test: fresh signed, never-checked commit
    `git push origin HEAD:main` → **rejected `GH006 … 2 of 2 required
-   status checks are expected`** (signature was valid — rejection was
+   status checks are expected`** (signature was valid; the rejection was
    purely the gate). Untested-sha direct pushes to `main` are closed.
 6. [x] Negative test (PR #10, `eval($_GET…)` at repo root):
    `Policy / Gate` **fail**, run exit 1, `mergeStateStatus: BLOCKED`,
    `gh pr merge` refused: "the base branch policy prohibits the merge".
    Probe reverted; `git diff origin/main origin/dev` empty.
-7. [x] `Semgrep OSS` (code-scanning PR decoration) reports dvwa alerts —
-   advisory, deliberately **not** required
+7. [x] `Semgrep OSS` (code-scanning PR decoration) reports dvwa alerts
+   (advisory, deliberately **not** required)
 
 ### Break-glass runbook (required status checks on main)
 
@@ -209,7 +209,7 @@ gh api -X DELETE repos/enofei/caller-repo/branches/main/protection/required_stat
 
 # 2. fix the problem; merges reopen (signature requirement remains)
 
-# 3. re-enable: no create sub-endpoint exists — full PUT, mirroring a
+# 3. re-enable: no create sub-endpoint exists: full PUT, mirroring a
 #    fresh GET snapshot exactly + the one added key, then verify-diff
 gh api repos/enofei/caller-repo/branches/main/protection > /tmp/before.json
 #    build PUT body from before.json (all enable-flags verbatim) with
@@ -220,16 +220,16 @@ gh api repos/enofei/caller-repo/branches/main/protection \
   --jq '{admins: .enforce_admins.enabled, sigs: .required_signatures.enabled, checks: .required_status_checks.contexts, force: .allow_force_pushes.enabled}'
 ```
 
-Never touch `required_signatures` to solve a gate problem — only
+Never touch `required_signatures` to solve a gate problem: only
 `required_status_checks` is ever added or removed.
 
 ## Execution status
 
 - [x] Plan finalized, pins resolved
-- [x] Phase 0 — fast-forward `dev` on both repos
-- [x] Phase 1 — clone DVWA
-- [x] Phase 2 — vendor into `dvwa/`
-- [x] Phase 3 — `sast.yml` in reusable repo (Semgrep-only; CodeQL dropped — no PHP)
-- [x] Phase 4 — caller SAST job + PR #9
-- [x] Phases 6–8 — OPA gate (reusable `policy.yml`, caller Rego + rules, matrix green)
-- [x] Phase 5 — merge reusable, tag re-cut, repin, merge PR #9, required checks, direct-push + negative tests
+- [x] Phase 0: fast-forward `dev` on both repos
+- [x] Phase 1: clone DVWA
+- [x] Phase 2: vendor into `dvwa/`
+- [x] Phase 3: `sast.yml` in reusable repo (Semgrep-only; CodeQL dropped for lack of PHP)
+- [x] Phase 4: caller SAST job + PR #9
+- [x] Phases 6–8: OPA gate (reusable `policy.yml`, caller Rego + rules, matrix green)
+- [x] Phase 5: merge reusable, tag re-cut, repin, merge PR #9, required checks, direct-push + negative tests

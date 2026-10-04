@@ -1,17 +1,9 @@
 package main
 
-# SAST policy gate.
-#
-# Input shape (built by the reusable policy workflow):
-#   {"mode": "warn" | "enforce-critical" | "enforce-full", "sarif": <semgrep SARIF>}
-#
-# Semantics:
-#   warn             -> no deny; all findings surface as warnings
-#   enforce-critical -> deny first-party findings at SARIF level "error"
-#   enforce-full     -> deny all first-party findings (any level)
-#   dvwa/**          -> never denied (third-party vendor code), surfaced as warnings
-#
-# Malformed input or an unknown mode denies (fail-closed).
+# SAST policy gate. Input: {"mode": warn|enforce-critical|enforce-full, "sarif": <SARIF>}.
+# enforce-critical denies first-party findings at level "error"; enforce-full denies all
+# first-party findings; warn denies nothing. dvwa/** is exempt from deny and always
+# surfaced as warnings. Malformed input or an unknown mode denies (fail-closed).
 
 valid_modes := {"warn", "enforce-critical", "enforce-full"}
 
@@ -27,9 +19,8 @@ wellformed if {
 
 results := object.get(input.sarif.runs[0], "results", [])
 
-# Result-level severity is authoritative when present; otherwise resolve it
-# from the rule descriptor's defaultConfiguration.level (Semgrep's usual
-# shape), falling back to "warning".
+# Severity: result.level if present, else the rule's defaultConfiguration.level,
+# else "warning" (Semgrep reports severity in the rule table, not the result).
 level_of(result) := level if {
 	level := result.level
 } else := level if {
@@ -55,8 +46,6 @@ denied_level(level, "enforce-critical") if level == "error"
 
 denied_level(level, "enforce-full") if level in {"error", "warning", "note"}
 
-# --- fail-closed guards ---
-
 deny contains msg if {
 	not wellformed
 	msg := "gate input malformed: expected sarif.runs[0].results"
@@ -67,8 +56,6 @@ deny contains msg if {
 	msg := sprintf("gate mode invalid: %v", [input.mode])
 }
 
-# --- enforce-critical: first-party findings at level error ---
-
 deny contains msg if {
 	input.mode == "enforce-critical"
 	some result in results
@@ -78,8 +65,6 @@ deny contains msg if {
 	msg := sprintf("[enforce-critical] %s at %s: %s", [rule_id_of(result), path, message_of(result)])
 }
 
-# --- enforce-full: every first-party finding ---
-
 deny contains msg if {
 	input.mode == "enforce-full"
 	some result in results
@@ -88,16 +73,12 @@ deny contains msg if {
 	msg := sprintf("[enforce-full] %s (%s) at %s: %s", [rule_id_of(result), level_of(result), path, message_of(result)])
 }
 
-# --- warnings: exempt findings are always visible ---
-
 warn contains msg if {
 	some result in results
 	path := path_of(result)
 	exempt_path(path)
 	msg := sprintf("[exempt-dvwa] %s (%s): %s", [rule_id_of(result), level_of(result), message_of(result)])
 }
-
-# --- warnings: findings not denied in the current mode stay visible ---
 
 warn contains msg if {
 	some result in results

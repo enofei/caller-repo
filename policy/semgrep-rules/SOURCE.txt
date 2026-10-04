@@ -16,7 +16,7 @@ Local edit after fetching (documented deviation from the pristine bundle):
 
 Scanned with: semgrep/semgrep:1.179.0 (digest-pinned in reusable sast.yml)
 
-Rules only change via reviewed, SSH-signed PRs to this repository —
-never fetched from the network at scan time. To refresh, re-fetch the
-bundle, re-apply the sentinel edit if still needed, update this header,
-and include the diff in the PR review.
+Rules only change via reviewed, SSH-signed PRs to this repository and
+are never fetched from the network at scan time. To refresh, re-fetch
+the bundle, re-apply the sentinel edit if still needed, update this
+header, and include the diff in the PR review.
