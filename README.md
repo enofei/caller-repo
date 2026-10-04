@@ -15,21 +15,21 @@ both repositories enforce identically.
 ```yaml
 jobs:
   build-and-test:
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@4584e684c283ef22f6fdc2a9d55846840edbeeda  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@c860fa61310d85269a385bdaaf5dfa5d836f0d38  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
       security-checks: true
 
   sast:
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@4584e684c283ef22f6fdc2a9d55846840edbeeda  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@c860fa61310d85269a385bdaaf5dfa5d836f0d38  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
   policy:
     if: ${{ always() }}
     needs: [sast]
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@4584e684c283ef22f6fdc2a9d55846840edbeeda  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@c860fa61310d85269a385bdaaf5dfa5d836f0d38  # v1.0.0
     with:
       mode: 'enforce-critical'
       policy-path: 'policy/'
