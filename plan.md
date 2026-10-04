@@ -125,12 +125,99 @@ Add a second job to `.github/workflows/ci.yml`:
 | Semgrep `--config auto` needs registry egress | Available on GH-hosted runners |
 | DVWA workflows executing in this repo | Stripped in Phase 2 — never uploaded |
 
+## Phases 6–8 — OPA policy gate (executed)
+
+Reusable repo (`dev`):
+
+- `sast.yml` hardened: Semgrep runs in digest-pinned container
+  `semgrep/semgrep:1.179.0@sha256:93963d9295a366f59e4850127b1550400ee7b388f04fe144e4a1f6325d96e01b`
+  (no pip), `semgrep scan` invoked explicitly (image has no ENTRYPOINT),
+  `--no-rewrite-rule-ids`, scans vendored rules (default input
+  `policy/semgrep-rules`), uploads `semgrep-sarif` artifact
+  (`if: always()`, `if-no-files-found: error`, retention 1 day)
+- New `policy.yml` (`workflow_call`): **main is clamped to
+  `enforce-critical`** regardless of caller input; downloads + validates
+  SARIF (structure, tool, results, rule table) fail-closed; installs
+  conftest `0.71.0` verified against embedded SHA-256
+  `765dfefdf0730693d7541ea0147e10d530a54ed257bbfec055ff34c837ffdf72`;
+  runs `conftest verify` + `conftest test --parser json --output github`
+
+Caller repo (`dev`):
+
+- `policy/sast.rego` — modes `warn` / `enforce-critical` / `enforce-full`;
+  `dvwa/**` never denied (visible as warnings); severity from SARIF
+  `result.level` else rule `defaultConfiguration.level` else `warning`;
+  malformed input / unknown mode → deny (fail-closed). 10 unit tests.
+- `policy/semgrep-rules/` — frozen `https://semgrep.dev/c/auto` bundle
+  (1073 rules; sentinel edit documented in `SOURCE.txt`)
+- `.github/dependabot.yml` — `cooldown: default-days: 7` (clears the only
+  first-party finding)
+- `ci.yml` — third job `policy` (`name: Policy`, `if: always()`,
+  `needs: [sast]`) calling `policy.yml`; pull_request-only trigger
+  (push trigger used for Phase 8, removed after: same-SHA duplicate
+  `Policy / Gate` checks could race a green dev-push against a red PR gate)
+
+Phase 8 evidence (each on real CI, recorded in `progress.md`):
+
+| Test | Result |
+|---|---|
+| baseline `enforce-critical`, dev + PR | green; 71 dvwa findings warn-only |
+| probe `eval($_GET…)` at root, `mode: warn` on dev | green, `##[warning][warn] … gate-probe.php` |
+| same commit, PR to main | **red**, clamped → `##[error][enforce-critical] … gate-probe.php` |
+| `mode: enforce-critical` explicit, probe present | red (error denied), first-party warning advisory |
+| `mode: enforce-full`, cooldown removed | red: `##[error][enforce-full] … dependabot … (warning)` |
+| same commit PR to main (clamped) | green (warning advisory under critical) |
+
+Check names confirmed live: `Build & Test / Build & Test`,
+`SAST / Semgrep`, `Policy / Gate`.
+
+## Phase 5 — release, repin, enforcement (order fixed by evidence)
+
+1. Reusable: PR `dev` → `main`, merge (GitHub-signed)
+2. Re-cut rolling `v1.0.0` → new main head
+3. Caller: repin **all three** (`build-test.yml`, `sast.yml`,
+   `policy.yml`) to tag SHA `# v1.0.0`; commit break-glass runbook (this
+   file) + README CI docs; PR re-checks green → merge PR #9 → `main`
+4. Enable required checks via **granular endpoint only**:
+   `POST …/branches/main/protection/required_status_checks` with
+   `strict: true`, contexts `["Policy / Gate", "SAST / Semgrep"]`
+   (never a full PUT — it would clobber `enforce_admins` etc.)
+5. Verify-diff: GET protection before/after; assert `enforce_admins:
+   true`, `required_signatures: true`, all `allow_*` unchanged; only
+   status checks added → rollback (DELETE endpoint) if anything else moved
+6. Direct-push test: fresh unchecked commit `git push origin dev:main`
+   → expect GH006 rejection; record actual outcome here
+7. Negative test: PR with a first-party error finding → `Policy / Gate`
+   red → merge blocked → revert
+8. `Semgrep OSS` (code-scanning PR decoration) shows dvwa alerts —
+   advisory, deliberately **not** required
+
+### Break-glass runbook (required status checks on main)
+
+With `enforce_admins: true` + required checks, a gate outage blocks all
+merges; the UI cannot bypass. Recovery:
+
+```bash
+# 1. remove the status-check requirement (signatures stay intact)
+gh api -X DELETE repos/enofei/caller-repo/branches/main/protection/required_status_checks
+# 2. fix the problem, merge with signatures still enforced
+# 3. re-add and verify
+gh api -X POST repos/enofei/caller-repo/branches/main/protection/required_status_checks \
+  -f strict=true -F contexts[]="Policy / Gate" -F contexts[]="SAST / Semgrep"
+gh api repos/enofei/caller-repo/branches/main/protection \
+  --jq '{enforce_admins: .enforce_admins.enabled, signatures: .required_signatures, checks: .required_status_checks.contexts, allow_force: .allow_force_pushes.enabled}'
+```
+
+Do not remove `required_signatures` to solve a gate problem — the
+runbook only ever touches `required_status_checks`.
+
 ## Execution status
 
 - [x] Plan finalized, pins resolved
-- [ ] Phase 0 — fast-forward `dev` on both repos
-- [ ] Phase 1 — clone DVWA
-- [ ] Phase 2 — vendor into `dvwa/` (review gate)
-- [ ] Phase 3 — `sast.yml` in reusable repo
-- [ ] Phase 4 — caller SAST job + PR
-- [ ] Phase 5 — tag re-cut, repin, merge
+- [x] Phase 0 — fast-forward `dev` on both repos
+- [x] Phase 1 — clone DVWA
+- [x] Phase 2 — vendor into `dvwa/`
+- [x] Phase 3 — `sast.yml` in reusable repo (Semgrep-only; CodeQL dropped — no PHP)
+- [x] Phase 4 — caller SAST job + PR #9
+- [x] Phases 6–8 — OPA gate (reusable `policy.yml`, caller Rego + rules, matrix green)
+- [ ] Phase 5 — merge reusable, tag re-cut, repin, merge PR #9, required checks, tests
