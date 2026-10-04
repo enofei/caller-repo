@@ -22,7 +22,6 @@ jobs:
     permissions:
       contents: read
       security-events: write
-      actions: read
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@50de289af52635a09aa9b459ff081ccf49d2058b  # provisional: dev pre-tag, repin after v1.0.0 re-cut
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@cf5455e4a1fce14ab9b28073c18002f934919304  # provisional: dev pre-tag, repin after v1.0.0 re-cut
     with:
-      languages: 'php,javascript'
+      semgrep-config: 'auto'
