@@ -63,24 +63,28 @@ green). `Policy / Gate` and `SAST / Semgrep` are required status checks on
 - `dev` is where work happens. Push to it freely.
 - `main` accepts only commits with verified signatures. Branch protection applies to
   administrators too, so unsigned or unverified pushes are rejected by GitHub with `GH006`.
+- **Required status checks on `main`:** `Policy / Gate` and `SAST / Semgrep`
+  (strict — branch must be up to date). A direct push of a commit that has
+  not passed both checks is rejected with `GH006` ("2 of 2 required status
+  checks are expected"); the admin bypass flag is refused as well. In
+  practice, changes land through a pull request. Break-glass (gate outage):
+  see `plan.md`.
 - Signing is automatic on a configured machine: `commit.gpgsign=true` with an SSH signing
   key registered on the GitHub account. `git verify-commit HEAD` checks a commit locally.
 - Pull requests can be merged to `main`; GitHub signs its own merge commits, so they pass
-  the gate.
+  the signature gate — and still have to pass the policy gate.
 
 ```mermaid
 flowchart TD
     A["Change made on dev"] --> B["git commit, signed automatically"]
     B --> C{"Signature verified by GitHub?"}
     C -->|"no: unsigned or unknown key"| D["Push to main rejected: GH006"]
-    C -->|yes| E{"Route to main"}
-    E -->|direct| F["git push origin dev:main"]
-    E -->|"pull request"| G["PR: dev to main"]
-    G --> H["CI runs reusable workflow: install, build, test, audit"]
-    H -->|fail| A
-    H -->|pass| I["Merge, GitHub-signed merge commit"]
-    F --> J["main updated, verified signatures only"]
-    I --> J
+    C -->|yes| G["PR: dev to main"]
+    G --> H["CI: Build & Test + SAST (Semgrep) + Policy / Gate"]
+    H -->|"gate red: first-party findings, or scan missing"| A
+    H -->|green| I["Merge, GitHub-signed merge commit"]
+    I --> J["main updated: signatures + required checks enforced"]
+    B -.->|"direct push of unchecked commit"| K["GH006: 2 of 2 required status checks are expected"]
 ```
 
 ## Application layout
