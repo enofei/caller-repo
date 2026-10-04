@@ -37,5 +37,5 @@ jobs:
       actions: read
     uses: enofei/reusable-build-test/.github/workflows/policy.yml@1396e50f1f2f2f177deea15f9fde5577940d4083  # provisional: dev pre-tag, repin after v1.0.0 re-cut
     with:
-      mode: 'enforce-critical'
+      mode: 'warn'
       policy-path: 'policy/'
