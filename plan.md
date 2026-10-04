@@ -171,45 +171,57 @@ Phase 8 evidence (each on real CI, recorded in `progress.md`):
 Check names confirmed live: `Build & Test / Build & Test`,
 `SAST / Semgrep`, `Policy / Gate`.
 
-## Phase 5 — release, repin, enforcement (order fixed by evidence)
+## Phase 5 — release, repin, enforcement (executed)
 
-1. Reusable: PR `dev` → `main`, merge (GitHub-signed)
-2. Re-cut rolling `v1.0.0` → new main head
-3. Caller: repin **all three** (`build-test.yml`, `sast.yml`,
-   `policy.yml`) to tag SHA `# v1.0.0`; commit break-glass runbook (this
-   file) + README CI docs; PR re-checks green → merge PR #9 → `main`
-4. Enable required checks via **granular endpoint only**:
-   `POST …/branches/main/protection/required_status_checks` with
-   `strict: true`, contexts `["Policy / Gate", "SAST / Semgrep"]`
-   (never a full PUT — it would clobber `enforce_admins` etc.)
-5. Verify-diff: GET protection before/after; assert `enforce_admins:
-   true`, `required_signatures: true`, all `allow_*` unchanged; only
-   status checks added → rollback (DELETE endpoint) if anything else moved
-6. Direct-push test: fresh unchecked commit `git push origin dev:main`
-   → expect GH006 rejection; record actual outcome here
-7. Negative test: PR with a first-party error finding → `Policy / Gate`
-   red → merge blocked → revert
-8. `Semgrep OSS` (code-scanning PR decoration) shows dvwa alerts —
+1. [x] Reusable: PR #4 `dev` → `main` merged → `4584e68`
+2. [x] Re-cut rolling `v1.0.0` → `4584e68` (verified via `resolve-action-sha.sh`)
+3. [x] Caller: repinned all three jobs to `4584e68 # v1.0.0`; PR #9 green → merged → `a722418`
+4. [x] Required checks enabled. There is **no create sub-endpoint** for
+   status checks (`POST`/`PUT` on the sub-resource both 404 while
+   disabled; docs only offer `GET`/`PATCH`/`DELETE`), so enabling used
+   the full `PUT /branches/main/protection` with a body mirroring the
+   GET snapshot exactly plus one added key — then verify-diff:
+   - `required_status_checks` added: `strict: true`, contexts
+     `Policy / Gate` + `SAST / Semgrep` (auto-bound to app 15368,
+     GitHub Actions)
+   - every other field byte-identical: `enforce_admins: true`,
+     `required_signatures: true`, `allow_force_pushes/deletions:
+     false`, `lock_branch/…: false`, reviews/restrictions still absent
+5. [x] Direct-push test: fresh signed, never-checked commit
+   `git push origin HEAD:main` → **rejected `GH006 … 2 of 2 required
+   status checks are expected`** (signature was valid — rejection was
+   purely the gate). Untested-sha direct pushes to `main` are closed.
+6. [x] Negative test (PR #10, `eval($_GET…)` at repo root):
+   `Policy / Gate` **fail**, run exit 1, `mergeStateStatus: BLOCKED`,
+   `gh pr merge` refused: "the base branch policy prohibits the merge".
+   Probe reverted; `git diff origin/main origin/dev` empty.
+7. [x] `Semgrep OSS` (code-scanning PR decoration) reports dvwa alerts —
    advisory, deliberately **not** required
 
 ### Break-glass runbook (required status checks on main)
 
 With `enforce_admins: true` + required checks, a gate outage blocks all
-merges; the UI cannot bypass. Recovery:
+merges; the UI cannot bypass (`--admin` is refused too). Recovery:
 
 ```bash
-# 1. remove the status-check requirement (signatures stay intact)
+# 1. remove ONLY the status-check requirement (signatures stay intact)
 gh api -X DELETE repos/enofei/caller-repo/branches/main/protection/required_status_checks
-# 2. fix the problem, merge with signatures still enforced
-# 3. re-add and verify
-gh api -X POST repos/enofei/caller-repo/branches/main/protection/required_status_checks \
-  -f strict=true -F contexts[]="Policy / Gate" -F contexts[]="SAST / Semgrep"
+
+# 2. fix the problem; merges reopen (signature requirement remains)
+
+# 3. re-enable: no create sub-endpoint exists — full PUT, mirroring a
+#    fresh GET snapshot exactly + the one added key, then verify-diff
+gh api repos/enofei/caller-repo/branches/main/protection > /tmp/before.json
+#    build PUT body from before.json (all enable-flags verbatim) with
+#    "required_status_checks": {"strict": true,
+#      "contexts": ["Policy / Gate", "SAST / Semgrep"]}
+gh api -X PUT repos/enofei/caller-repo/branches/main/protection --input /tmp/body.json
 gh api repos/enofei/caller-repo/branches/main/protection \
-  --jq '{enforce_admins: .enforce_admins.enabled, signatures: .required_signatures, checks: .required_status_checks.contexts, allow_force: .allow_force_pushes.enabled}'
+  --jq '{admins: .enforce_admins.enabled, sigs: .required_signatures.enabled, checks: .required_status_checks.contexts, force: .allow_force_pushes.enabled}'
 ```
 
-Do not remove `required_signatures` to solve a gate problem — the
-runbook only ever touches `required_status_checks`.
+Never touch `required_signatures` to solve a gate problem — only
+`required_status_checks` is ever added or removed.
 
 ## Execution status
 
@@ -220,4 +232,4 @@ runbook only ever touches `required_status_checks`.
 - [x] Phase 3 — `sast.yml` in reusable repo (Semgrep-only; CodeQL dropped — no PHP)
 - [x] Phase 4 — caller SAST job + PR #9
 - [x] Phases 6–8 — OPA gate (reusable `policy.yml`, caller Rego + rules, matrix green)
-- [ ] Phase 5 — merge reusable, tag re-cut, repin, merge PR #9, required checks, tests
+- [x] Phase 5 — merge reusable, tag re-cut, repin, merge PR #9, required checks, direct-push + negative tests
