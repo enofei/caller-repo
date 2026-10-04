@@ -56,7 +56,7 @@ content) but stays visible as warnings. `main` is clamped to `enforce-critical`
 inside the reusable workflow, so callers cannot relax the mode for merges.
 Malformed or missing scan results fail the gate (red, never
 green). `Policy / Gate` and `SAST / Semgrep` are required status checks on
-`main` (break-glass procedure: `plan.md`).
+`main` (break-glass runbook: below).
 
 ## Security model
 
@@ -99,7 +99,7 @@ fail-secure defaults, and tooling verified before it runs.
   not passed both checks is rejected with `GH006` ("2 of 2 required status
   checks are expected"); the admin bypass flag is refused as well. In
   practice, changes land through a pull request. Break-glass (gate outage):
-  see `plan.md`.
+  see the runbook below.
 - Signing is automatic on a configured machine: `commit.gpgsign=true` with an SSH signing
   key registered on the GitHub account. `git verify-commit HEAD` checks a commit locally.
 - Pull requests can be merged to `main`; GitHub signs its own merge commits, so they pass
@@ -117,6 +117,31 @@ flowchart TD
     I --> J["main updated: signatures + required checks enforced"]
     B -.->|"direct push of unchecked commit"| K["GH006: 2 of 2 required status checks are expected"]
 ```
+
+### Break-glass runbook (required status checks on main)
+
+With `enforce_admins: true` + required checks, a gate outage blocks all
+merges; the UI cannot bypass (`--admin` is refused too). Recovery:
+
+```bash
+# 1. remove ONLY the status-check requirement (signatures stay intact)
+gh api -X DELETE repos/enofei/caller-repo/branches/main/protection/required_status_checks
+
+# 2. fix the problem; merges reopen (signature requirement remains)
+
+# 3. re-enable: no create sub-endpoint exists: full PUT, mirroring a
+#    fresh GET snapshot exactly + the one added key, then verify-diff
+gh api repos/enofei/caller-repo/branches/main/protection > /tmp/before.json
+#    build PUT body from before.json (all enable-flags verbatim) with
+#    "required_status_checks": {"strict": true,
+#      "contexts": ["Policy / Gate", "SAST / Semgrep"]}
+gh api -X PUT repos/enofei/caller-repo/branches/main/protection --input /tmp/body.json
+gh api repos/enofei/caller-repo/branches/main/protection \
+  --jq '{admins: .enforce_admins.enabled, sigs: .required_signatures.enabled, checks: .required_status_checks.contexts, force: .allow_force_pushes.enabled}'
+```
+
+Never touch `required_signatures` to solve a gate problem: only
+`required_status_checks` is ever added or removed.
 
 ## Application layout
 
