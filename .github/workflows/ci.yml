@@ -24,7 +24,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@6f0639e7b528763f05edc1fc38dfc7b9c4868047  # provisional: dev pre-tag, repin after v1.0.0 re-cut
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@1396e50f1f2f2f177deea15f9fde5577940d4083  # provisional: dev pre-tag, repin after v1.0.0 re-cut
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -35,7 +35,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@6f0639e7b528763f05edc1fc38dfc7b9c4868047  # provisional: dev pre-tag, repin after v1.0.0 re-cut
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@1396e50f1f2f2f177deea15f9fde5577940d4083  # provisional: dev pre-tag, repin after v1.0.0 re-cut
     with:
       mode: 'enforce-critical'
       policy-path: 'policy/'
