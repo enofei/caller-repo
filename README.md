@@ -63,6 +63,17 @@ flowchart TD
 No third-party runtime dependencies. Requires Node.js 24 (current LTS); `engines` is set to
 `>=24`.
 
+## Vendored third-party code
+
+| Path | Upstream | License | Purpose |
+|---|---|---|---|
+| `dvwa/` | [digininja/DVWA](https://github.com/digininja/DVWA) (`43b0f8b`) | GPL-3.0 (`dvwa/COPYING.txt`) | Intentionally vulnerable PHP app used as SAST test content |
+
+`dvwa/` is an unmodified copy of DVWA's source with `.git/` and `.github/` removed; no
+upstream workflows or automation run in this repository. It is **not deployed, installed,
+or executed here** — only statically analyzed by CI. The rest of this repository remains
+MIT-licensed; DVWA's files stay under GPL-3.0 as shipped.
+
 ## Local development
 
 ```bash
