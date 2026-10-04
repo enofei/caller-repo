@@ -58,6 +58,37 @@ mode for merges. Malformed or missing scan results fail the gate (red, never
 green). `Policy / Gate` and `SAST / Semgrep` are required status checks on
 `main` (break-glass procedure: `plan.md`).
 
+## Security model
+
+Protection works at two layers: the application and the repository itself.
+
+### What protects the application (shift-left)
+
+| Threat | Control |
+|---|---|
+| Vulnerable code (injection, unsafe `eval`, …) committed | SAST scans every PR; `Policy / Gate` blocks first-party findings **before** merge |
+| Known-vulnerable dependencies | `npm audit` fails the build; Dependabot opens update PRs (7-day cooldown) |
+| Findings in intentional test content creating noise | `dvwa/**` exempt from blocking, still visible as warnings |
+
+### What protects the repository (zero-trust CI)
+
+| Threat | Control |
+|---|---|
+| Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep runs from a digest-pinned container |
+| Poisoned rule source at scan time | rules vendored in `policy/semgrep-rules/`, hash recorded in `SOURCE.txt`; zero network fetch during scan |
+| Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
+| Direct push of unchecked code to `main` | required status checks + signatures; rejected with `GH006` (verified by test) |
+| Commit forgery | SSH-signed commits required, administrators included |
+| History rewrite | force-push and branch deletion disabled on `main` |
+| Gate failing open (missing or invalid results) | fail-closed: any anomaly = red, never green |
+
+### Defense in depth
+
+`signature check → SAST scan → policy gate → GitHub enforcement` — four
+independent layers; compromising one leaves the others standing. The
+pipeline follows established supply-chain practice: immutable pins,
+fail-secure defaults, and tooling verified before it runs.
+
 ## Branch and signing policy
 
 - `dev` is where work happens. Push to it freely.
