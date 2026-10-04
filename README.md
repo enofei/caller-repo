@@ -22,7 +22,7 @@ jobs:
       security-checks: true
 ```
 
-On every pull request to `main` or `develop`, the reusable workflow checks out this
+On every pull request to `main` or `dev`, the reusable workflow checks out this
 repository, installs from the lockfile, builds, runs the tests, and audits dependencies.
 The steps themselves are maintained in the reusable repository; this file only supplies
 inputs.
