@@ -1,0 +1,11 @@
+# gitleaks false positives — documented deviations, reviewed in PRs.
+#
+# policy/semgrep-rules/auto.yaml is the vendored semgrep registry bundle. Its
+# rule patterns literally contain key-marker strings (e.g. the PGP private-key
+# block header at line 1433); gitleaks matches those detection patterns as if
+# they were real keys. They are rule content, not secrets. Fingerprints cover
+# both scan modes: worktree (path:rule:line) and history
+# (commit:path:rule:line). If auto.yaml is re-fetched and line numbers shift,
+# the gate fails closed until these fingerprints are refreshed.
+policy/semgrep-rules/auto.yaml:private-key:1433
+4d63f3acadf21a618990905a19bb9cd2e8907c37:policy/semgrep-rules/auto.yaml:private-key:1433

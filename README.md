@@ -15,48 +15,75 @@ signing policy, which both repositories enforce identically.
 ```yaml
 jobs:
   build-and-test:
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@de6baabebe8d9663ba701d49ea026d5a07cf1575  # v1.0.0
+    name: Build & Test
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@b9eab3ad9e5ab9a2d42187c12595e62f35990005  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
       security-checks: true
 
   sast:
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@de6baabebe8d9663ba701d49ea026d5a07cf1575  # v1.0.0
+    name: SAST
+    permissions:
+      contents: read
+      security-events: write
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@b9eab3ad9e5ab9a2d42187c12595e62f35990005  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
   policy:
+    name: Policy
     if: ${{ always() }}
     needs: [sast]
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@de6baabebe8d9663ba701d49ea026d5a07cf1575  # v1.0.0
+    permissions:
+      contents: read
+      actions: read
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@b9eab3ad9e5ab9a2d42187c12595e62f35990005  # v1.0.0
     with:
-      mode: 'enforce-critical'
+      mode: 'enforce-full'
       policy-path: 'policy/'
 ```
 
 On every pull request, three jobs run:
 
 1. **Build & Test**: install from the lockfile, build, test, audit deps.
-2. **SAST / Semgrep**: a digest-pinned Semgrep container scans the repository
-   with the rule bundle frozen in `policy/semgrep-rules/` (nothing is fetched
-   from the network at scan time) and uploads SARIF to code scanning.
-3. **Policy / Gate**: a fail-closed OPA gate that downloads the SARIF artifact,
-   verifies conftest against an embedded SHA-256, runs the policy unit tests,
-   then evaluates `policy/sast.rego`:
+2. **SAST**: four scanners, all static (no build), each uploading SARIF to code
+   scanning and archiving an artifact for the gate:
+   - **Semgrep** — rule bundle frozen in `policy/semgrep-rules/` (nothing fetched
+     from the network at scan time)
+   - **Gitleaks** — secrets, both the worktree and the full git history;
+     documented false positives suppressed via `.gitleaksignore`
+   - **Trivy fs** — dependency CVEs from lockfiles and IaC/Dockerfile
+     misconfigurations (misconfig checks frozen in the digest-pinned binary;
+     vulnerability DB downloaded with Trivy's signature verification)
+   - **Dependency Review** — fails on PRs that introduce vulnerable
+     dependencies (own required check; no SARIF path)
+3. **Policy / Gate**: a fail-closed OPA gate that downloads **all** SARIF
+   artifacts (any missing ⇒ red), merges them, verifies conftest against an
+   embedded SHA-256, runs the policy unit tests, then evaluates
+   `policy/sast.rego` against the findings baseline `policy/baseline.json`:
 
 | Mode | Behavior |
 |---|---|
 | `warn` | advisory only: findings annotate the run, never block |
-| `enforce-critical` | blocks on first-party findings at error level |
-| `enforce-full` | blocks on every first-party finding, any level |
+| `enforce-critical` | blocks on findings at error level |
+| `enforce-full` | blocks on every finding, any level |
 
-`dvwa/**` is exempt from blocking (it is intentionally vulnerable SAST test
-content) but stays visible as warnings. `main` is clamped to `enforce-critical`
-inside the reusable workflow, so callers cannot relax the mode for merges.
-Malformed or missing scan results fail the gate (red, never
-green). `Policy / Gate` and `SAST / Semgrep` are required status checks on
-`main` (break-glass runbook: below).
+There are **no path exemptions**: dvwa findings are scanned and evaluated like
+everything else. Known findings are fingerprinted in `policy/baseline.json`
+(sha256 of tool+rule+path+message) and suppressed in every mode; anything new —
+first-party or dvwa — blocks under enforcement. `main` is clamped to
+`enforce-full` inside the reusable workflow, so callers cannot relax the mode
+for merges. Malformed or missing scan results or baseline fail the gate (red,
+never green). Required status checks on `main`: `Policy / Gate`,
+`SAST / Semgrep`, `SAST / Gitleaks`, `SAST / Trivy`, and
+`SAST / Dependency Review` (break-glass runbook: below).
+
+Gate modes are exercised on `dev` through `.github/workflows/gate-test.yml`:
+`workflow_dispatch` picks `warn` / `enforce-critical` / `enforce-full`, and
+every push to `dev` runs a `warn` smoke. Those runs use distinct check names
+(`SAST Test / *`, `Gate Test / Gate`) that can never satisfy `main`'s required
+checks.
 
 ## Security model
 
@@ -66,21 +93,24 @@ Protection works at two layers: the application and the repository itself.
 
 | Threat | Control |
 |---|---|
-| Vulnerable code (injection, unsafe `eval`, ...) committed | SAST scans every PR; `Policy / Gate` blocks first-party findings before merge |
-| Known-vulnerable dependencies | `npm audit` fails the build; Dependabot opens update PRs (7-day cooldown) |
-| Findings in intentional test content creating noise | `dvwa/**` exempt from blocking, still visible as warnings |
+| Vulnerable code (injection, unsafe `eval`, ...) committed | Semgrep + Gitleaks + Trivy scan every PR; `Policy / Gate` blocks any finding not in the baseline before merge |
+| Hardcoded secrets committed | Gitleaks scans worktree + history every PR; Push Protection as a second layer |
+| Known-vulnerable dependencies | `npm audit` fails the build; Trivy reads lockfiles without building; Dependency Review blocks PRs that introduce vulnerable deps; Dependabot opens update PRs (7-day cooldown) |
+| IaC / Dockerfile / workflow misconfigurations | Trivy misconfig scanner (checks frozen in the digest-pinned binary) |
+| Findings in intentional test content | no exemptions: known dvwa findings live in `policy/baseline.json` (reviewed, fingerprinted); new ones block like anything else |
 
 ### What protects the repository (zero-trust CI)
 
 | Threat | Control |
 |---|---|
-| Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep runs from a digest-pinned container |
-| Poisoned rule source at scan time | rules vendored in `policy/semgrep-rules/`, hash recorded in `SOURCE.txt`; zero network fetch during scan |
+| Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep, Gitleaks, and Trivy run from digest-pinned containers |
+| Poisoned rule source at scan time | Semgrep rules vendored in `policy/semgrep-rules/` (hash in `SOURCE.txt`); Trivy misconfig checks frozen in the pinned binary; `.gitleaksignore` reviewed like code |
 | Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
 | Direct push of unchecked code to `main` | required status checks + signatures; rejected with `GH006` (verified by test) |
 | Commit forgery | SSH-signed commits required, administrators included |
 | History rewrite | force-push and branch deletion disabled on `main` |
-| Gate failing open (missing or invalid results) | fail-closed: any anomaly = red, never green |
+| Gate failing open (missing results, missing baseline, invalid mode) | fail-closed: any anomaly = red, never green |
+| Loosening the gate on merges | `main` is hard-clamped to `enforce-full` in the reusable workflow; baseline additions are reviewed in signed PRs |
 
 ### Defense in depth
 
@@ -91,15 +121,16 @@ fail-secure defaults, and tooling verified before it runs.
 
 ## Branch and signing policy
 
-- `dev` is where work happens. Push to it freely.
+- `dev` is where work happens. Push to it freely; every push runs the
+  `Gate Test` warn-mode smoke, and `workflow_dispatch` exercises any gate mode.
 - `main` accepts only commits with verified signatures. Branch protection applies to
   administrators too, so unsigned or unverified pushes are rejected by GitHub with `GH006`.
-- Two status checks are required on `main`: `Policy / Gate` and `SAST / Semgrep`
+- Five status checks are required on `main`: `Policy / Gate`, `SAST / Semgrep`,
+  `SAST / Gitleaks`, `SAST / Trivy`, and `SAST / Dependency Review`
   (strict, so the branch must be up to date). A direct push of a commit that has
-  not passed both checks is rejected with `GH006` ("2 of 2 required status
-  checks are expected"); the admin bypass flag is refused as well. In
-  practice, changes land through a pull request. Break-glass (gate outage):
-  see the runbook below.
+  not passed them is rejected with `GH006`; the admin bypass flag is refused as
+  well. In practice, changes land through a pull request. Break-glass (gate
+  outage): see the runbook below.
 - Signing is automatic on a configured machine: `commit.gpgsign=true` with an SSH signing
   key registered on the GitHub account. `git verify-commit HEAD` checks a commit locally.
 - Pull requests can be merged to `main`; GitHub signs its own merge commits, so they pass
@@ -111,11 +142,11 @@ flowchart TD
     B --> C{"Signature verified by GitHub?"}
     C -->|"no: unsigned or unknown key"| D["Push to main rejected: GH006"]
     C -->|yes| G["PR: dev to main"]
-    G --> H["CI: Build & Test + SAST (Semgrep) + Policy / Gate"]
-    H -->|"gate red: first-party findings, or scan missing"| A
+    G --> H["CI: Build & Test + SAST (4 scanners) + Policy / Gate"]
+    H -->|"gate red: new findings, or scan missing"| A
     H -->|green| I["Merge, GitHub-signed merge commit"]
     I --> J["main updated: signatures + required checks enforced"]
-    B -.->|"direct push of unchecked commit"| K["GH006: 2 of 2 required status checks are expected"]
+    B -.->|"direct push of unchecked commit"| K["GH006: required status checks are expected"]
 ```
 
 ### Break-glass runbook (required status checks on main)
@@ -133,8 +164,9 @@ gh api -X DELETE repos/enofei/caller-repo/branches/main/protection/required_stat
 #    fresh GET snapshot exactly + the one added key, then verify-diff
 gh api repos/enofei/caller-repo/branches/main/protection > /tmp/before.json
 #    build PUT body from before.json (all enable-flags verbatim) with
-#    "required_status_checks": {"strict": true,
-#      "contexts": ["Policy / Gate", "SAST / Semgrep"]}
+#    "required_status_checks": {"strict": true, "contexts": [
+#      "Policy / Gate", "SAST / Semgrep", "SAST / Gitleaks",
+#      "SAST / Trivy", "SAST / Dependency Review"]}
 gh api -X PUT repos/enofei/caller-repo/branches/main/protection --input /tmp/body.json
 gh api repos/enofei/caller-repo/branches/main/protection \
   --jq '{admins: .enforce_admins.enabled, sigs: .required_signatures.enabled, checks: .required_status_checks.contexts, force: .allow_force_pushes.enabled}'
@@ -150,6 +182,15 @@ Never touch `required_signatures` to solve a gate problem: only
 | `src/index.js` | Application code (`slugify`, `greet`) |
 | `scripts/build.js` | Bundles `src/` into `dist/` and writes build metadata |
 | `test/index.test.js` | Tests on Node's built-in `node:test` runner |
+| `policy/sast.rego` | Gate policy: modes, baseline matching, deny/warn rules |
+| `policy/sast_test.rego` | Policy unit tests (`conftest verify` runs them in CI) |
+| `policy/baseline.json` | Fingerprints of known findings (vendored dvwa corpus) |
+| `policy/semgrep-rules/` | Frozen Semgrep rule bundle (provenance: `SOURCE.txt`) |
+| `.gitleaksignore` | Documented Gitleaks false positives (vendored rule patterns) |
+| `.github/workflows/ci.yml` | PR pipeline: build + SAST + gate |
+| `.github/workflows/gate-test.yml` | Dev-branch mode testing (distinct check names) |
+| `scripts/update-baseline.sh` | Regenerates `policy/baseline.json` from local scans |
+| `scripts/sarif_to_baseline.py` | SARIF → baseline fingerprint generator |
 
 No third-party runtime dependencies. Requires Node.js 24 (current LTS); `engines` is set to
 `>=24`.
@@ -174,7 +215,18 @@ npm run test:ci
 npm audit --audit-level=high
 ```
 
-These are the same commands CI runs.
+These are the same commands CI runs. The policy and scanners can be exercised
+locally too:
+
+```bash
+conftest verify --policy policy/           # policy unit tests (17)
+scripts/update-baseline.sh                 # regenerate baseline.json (needs docker)
+```
+
+Baseline updates (tool pin bumps, dvwa re-vendors) are reviewed like code:
+every added fingerprint is a finding that stops blocking once merged. The
+baseline only accepts `dvwa/` paths — first-party findings are fixed or
+allowlisted at the tool level (`.gitleaksignore`), never baselined.
 
 ## Updating the workflow pin
 

@@ -1,0 +1,347 @@
+{
+  "fingerprints": [
+    {
+      "sha256": "8b21aa4ee3b40b6851112f6fe7294e20e6ccbcfadba24f60c9bd98e902860991",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-filename.tainted-filename",
+      "path": "dvwa/instructions.php",
+      "message": "File name based on user input risks server-side request forgery."
+    },
+    {
+      "sha256": "9be07d4b2c5f7ea7b9bf6cbb40663e74ad37fcd0c831eda1477c43b6ad656ba4",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/login.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "7ce51fb1dec1b8ab916d597e89577b93deeb58d371be3360ab27d33d458c82b5",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.phpinfo-use.phpinfo-use",
+      "path": "dvwa/phpinfo.php",
+      "message": "The 'phpinfo' function may reveal sensitive information about your environment."
+    },
+    {
+      "sha256": "f1150a192c67ac050a9f5cfb8e83e9a705a78d94bbae373f7ec37a4fb6206a79",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.php-permissive-cors.php-permissive-cors",
+      "path": "dvwa/vulnerabilities/api/gen_openapi.php",
+      "message": "Access-Control-Allow-Origin response header is set to \"*\". This will disable CORS Same Origin Policy restrictions."
+    },
+    {
+      "sha256": "01b340acb8bea2586f7ba390e6a4497cd987fb60a6be6412b3ad4f2e192ecf27",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.php-permissive-cors.php-permissive-cors",
+      "path": "dvwa/vulnerabilities/api/public/index.php",
+      "message": "Access-Control-Allow-Origin response header is set to \"*\". This will disable CORS Same Origin Policy restrictions."
+    },
+    {
+      "sha256": "380c6764389db5abe5b449e3d5256feedd4538320ac221303dc3d9cd3f1429b4",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.exec-use.exec-use",
+      "path": "dvwa/vulnerabilities/api/src/HealthController.php",
+      "message": "Executing non-constant commands. This can lead to command injection."
+    },
+    {
+      "sha256": "e24108152761c4ce3e83e0e319309faf8236260bf895c134c5c0f070d8530769",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/api/src/HealthController.php",
+      "message": "User input is passed to a function that executes a shell command. This can lead to remote code execution."
+    },
+    {
+      "sha256": "ec50f70b88c0093bf22bb672ec8f6b0abaa85ff67f53b3ec91b4e2c8f32aedee",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.audit.openssl-decrypt-validate.openssl-decrypt-validate",
+      "path": "dvwa/vulnerabilities/api/src/Token.php",
+      "message": "The function `openssl_decrypt` returns either a string of the decrypted data on success or `false` on failure. If the failure case is not handled, this could lead to undefined behavior in your application. Please handle the case where `openssl_decrypt` returns `false`."
+    },
+    {
+      "sha256": "cf4bda4dde2432f8f7cecf5f7ba11e304cbe9585befcb73f939cb0f6c26c7fa4",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/bac/source/low.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "d742046125fc54455f298c79fe844611b2cfb40ac2a6bbcc8a784662f13ca37a",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/bac/source/medium.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "bff43d5a9fa1b383fad98ab9bc2aa1dd9bb7d0dbfc22d3453f2b8f9d79cbcca0",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/brute/source/high.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "34240ef597178e6c3b17651e2ef68eb1f27f0b549d036f32cf4207b06dba09b5",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/brute/source/low.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "b1216e12adba793eaf0b880572b9373c9eb41868e4caeffe8431e68c610067b9",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/brute/source/low.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "0ed65d549ccf9526f1c4b032a1573df1cd1ba336317faf3e35d52bdd1d459650",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/brute/source/medium.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "e32034db8de0f57ba5add529e2ce1cc24a17b3c5b56d3d46e3b44adf4490d4bf",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/captcha/source/impossible.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "a53cb992bd0b4f4fa07ab039f97ba33141af85910bbf1562d0c9c140647b7349",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/cryptography/source/ecb_attack.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "2ba993ddbf2d9b23de57a646f3bd851b7852937bb14e6c1b3287ee8178a4c8d6",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/csrf/test_credentials.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "6c015688afd102d2d84c6bd61ceff49efe527c4ec64add4c569727c53a736559",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.exec-use.exec-use",
+      "path": "dvwa/vulnerabilities/exec/source/high.php",
+      "message": "Executing non-constant commands. This can lead to command injection."
+    },
+    {
+      "sha256": "9ec3557bc19bec319cfd6701d3e2cb598549bf4e39dafcc08baa40ff9b98ee86",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/high.php",
+      "message": "User input is passed to a function that executes a shell command. This can lead to remote code execution."
+    },
+    {
+      "sha256": "8bcf61e6838659dcc1e8499b1775f5ec92000164898a43cf401b3b660fd857d9",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/high.php",
+      "message": "Executing non-constant commands. This can lead to command injection. You should use `escapeshellarg()` when using command."
+    },
+    {
+      "sha256": "92d3ca9faa5957b2c5af0ffc80a11f1d6530dc99341e1cfe76816991aa6045a7",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.exec-use.exec-use",
+      "path": "dvwa/vulnerabilities/exec/source/impossible.php",
+      "message": "Executing non-constant commands. This can lead to command injection."
+    },
+    {
+      "sha256": "ce5cb20c62a867e8c7fd73de7a5d4f3bd8343c232d011760fe3cfcc21a03a46f",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/impossible.php",
+      "message": "User input is passed to a function that executes a shell command. This can lead to remote code execution."
+    },
+    {
+      "sha256": "4ef7c5aea2274406fcc2f328cbb5a81b09de6885ad1475be769a4d835fc4a8c4",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/impossible.php",
+      "message": "Executing non-constant commands. This can lead to command injection. You should use `escapeshellarg()` when using command."
+    },
+    {
+      "sha256": "ebf464d00396f4cd32a6669776a9e41062800452302613db18fcb6fb9655d24a",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.exec-use.exec-use",
+      "path": "dvwa/vulnerabilities/exec/source/low.php",
+      "message": "Executing non-constant commands. This can lead to command injection."
+    },
+    {
+      "sha256": "6b60288d3596ca624387339a15b9a949a3732027e3251eba1c820a8f0175dd23",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/low.php",
+      "message": "User input is passed to a function that executes a shell command. This can lead to remote code execution."
+    },
+    {
+      "sha256": "170a9ee5cd127317ace2d80ebcbf4aeb86456583dccb6660783d7906013f33f4",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/low.php",
+      "message": "Executing non-constant commands. This can lead to command injection. You should use `escapeshellarg()` when using command."
+    },
+    {
+      "sha256": "30cda1fb7235d18dd97c3f2e7706f11c024ed00676bfdb907a03af2b33d37a52",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.exec-use.exec-use",
+      "path": "dvwa/vulnerabilities/exec/source/medium.php",
+      "message": "Executing non-constant commands. This can lead to command injection."
+    },
+    {
+      "sha256": "ada184bf969d9002a825fd8f525fd958483f0a281c09426c525101edc1fc1be2",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/medium.php",
+      "message": "User input is passed to a function that executes a shell command. This can lead to remote code execution."
+    },
+    {
+      "sha256": "1fe88e00f4fc1a29e352c19b6cfa65ffb03e2f03c2c9243912e1bfdebd2c973e",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.tainted-exec.tainted-exec",
+      "path": "dvwa/vulnerabilities/exec/source/medium.php",
+      "message": "Executing non-constant commands. This can lead to command injection. You should use `escapeshellarg()` when using command."
+    },
+    {
+      "sha256": "24400f99a75be8ca62ecedf0acc73dca16b79d40d6396878a16e7695e976da1b",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-filename.tainted-filename",
+      "path": "dvwa/vulnerabilities/fi/source/high.php",
+      "message": "File name based on user input risks server-side request forgery."
+    },
+    {
+      "sha256": "8c5466bb9c79fa8cdcf3b1395fdd10e7ed9a2571abdfb5ebeaf0ea4806c200ac",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
+      "path": "dvwa/vulnerabilities/javascript/index.php",
+      "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
+    },
+    {
+      "sha256": "e2471d4495a1431c0a2232673d280ce986792b1aa237764545a2c71d94830b01",
+      "tool": "Semgrep OSS",
+      "ruleId": "javascript.browser.security.eval-detected.eval-detected",
+      "path": "dvwa/vulnerabilities/javascript/source/high.js",
+      "message": "Detected the use of eval(). eval() can be dangerous if used to evaluate dynamic content. If this content can be input from outside the program, this may be a code injection vulnerability. Ensure evaluated content is not definable by external sources."
+    },
+    {
+      "sha256": "cd169129a5e2eb3f0633a611aad6128ba4d339db90c3f3cea547a8ace780b158",
+      "tool": "Semgrep OSS",
+      "ruleId": "javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp",
+      "path": "dvwa/vulnerabilities/javascript/source/high.js",
+      "message": "RegExp() called with a `f` function argument, this might allow an attacker to cause a Regular Expression Denial-of-Service (ReDoS) within your application as RegExP blocks the main thread. For this reason, it is recommended to use hardcoded regexes instead. If your regex is run on user-controlled input, consider performing input validation or use a regex checking/sanitization library such as https://www.npmjs.com/package/recheck to verify that the regex does not appear vulnerable to ReDoS."
+    },
+    {
+      "sha256": "240e9b75906d1dc169baba12f18de66a72daca602793c74089064b7973759cdb",
+      "tool": "Semgrep OSS",
+      "ruleId": "javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp",
+      "path": "dvwa/vulnerabilities/javascript/source/high.js",
+      "message": "RegExp() called with a `h` function argument, this might allow an attacker to cause a Regular Expression Denial-of-Service (ReDoS) within your application as RegExP blocks the main thread. For this reason, it is recommended to use hardcoded regexes instead. If your regex is run on user-controlled input, consider performing input validation or use a regex checking/sanitization library such as https://www.npmjs.com/package/recheck to verify that the regex does not appear vulnerable to ReDoS."
+    },
+    {
+      "sha256": "4c611048ed4041d360cef7ee6ef81688229baa68c34d25229201d07b395477bb",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/sqli/source/low.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "b4a2bf8884351b1b760a340159b52cca076c939ff92674bf171f8b7975f1dcdd",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/sqli_blind/source/high.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "4b37e74dfbc8b028e35505ff2c0e41c154896d09c64fada82be078687f07f1d6",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/sqli_blind/source/low.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "0ad979763a9103d09c57a01970f790edaac63da7ef97420a0b49e02d0bd959d1",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-sql-string.tainted-sql-string",
+      "path": "dvwa/vulnerabilities/sqli_blind/source/medium.php",
+      "message": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`$mysqli->prepare(\"INSERT INTO test(id, label) VALUES (?, ?)\");`) or a safe library."
+    },
+    {
+      "sha256": "fa705fa8414b45b5da4666c488af967d1ad771f6099becc3b194a62b6abdf49e",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.unlink-use.unlink-use",
+      "path": "dvwa/vulnerabilities/upload/source/impossible.php",
+      "message": "Using user input when deleting files with `unlink()` is potentially dangerous. A malicious actor could use this to modify or access files they have no right to."
+    },
+    {
+      "sha256": "1c4f164e77dfbee64820239347d7e46a05136ad38899256926d71fd29429db27",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.eval-use.eval-use",
+      "path": "dvwa/vulnerabilities/view_help.php",
+      "message": "Evaluating non-constant commands. This can lead to command injection."
+    },
+    {
+      "sha256": "ffc7134c713ec392f7da0dd09d00431a0354f780f711fe7fae8103ba64b54413",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-filename.tainted-filename",
+      "path": "dvwa/vulnerabilities/view_help.php",
+      "message": "File name based on user input risks server-side request forgery."
+    },
+    {
+      "sha256": "c8e2fc76d949dcd393cb16f28fe4b1d1e06121927527952f879b2c3e7478f2bc",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-filename.tainted-filename",
+      "path": "dvwa/vulnerabilities/view_source.php",
+      "message": "File name based on user input risks server-side request forgery."
+    },
+    {
+      "sha256": "5493daf68aecd6cfb72bb0cff0b1f62b148b2c10199c0036a7fc87c69baa077b",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.tainted-filename.tainted-filename",
+      "path": "dvwa/vulnerabilities/view_source_all.php",
+      "message": "File name based on user input risks server-side request forgery."
+    },
+    {
+      "sha256": "6b0edd59d0ea8dfd67a8d0fb31769b46c27362a51682b67a881eb4158e7f8c57",
+      "tool": "Trivy",
+      "ruleId": "DS-0002",
+      "path": "dvwa/Dockerfile",
+      "message": "Artifact: dvwa/Dockerfile\nType: dockerfile\nVulnerability DS-0002\nSeverity: HIGH\nMessage: Specify at least 1 USER command in Dockerfile with non-root user as argument\nLink: [DS-0002](https://avd.aquasec.com/misconfig/ds-0002)"
+    },
+    {
+      "sha256": "fc2bbd813beca63d4c8c5fb37a0caff191df84d2ee66f4823fa1f04ff1ac8e97",
+      "tool": "Trivy",
+      "ruleId": "DS-0013",
+      "path": "dvwa/Dockerfile",
+      "message": "Artifact: dvwa/Dockerfile\nType: dockerfile\nVulnerability DS-0013\nSeverity: MEDIUM\nMessage: RUN should not be used to change directory: 'cd /var/www/html/vulnerabilities/api  && composer install'. Use 'WORKDIR' statement instead.\nLink: [DS-0013](https://avd.aquasec.com/misconfig/ds-0013)"
+    },
+    {
+      "sha256": "d8dfd46ada7f5b7c91b44aee18ee3b2d3e32edcbe5a73323ea84087bde5c8c0b",
+      "tool": "Trivy",
+      "ruleId": "DS-0026",
+      "path": "dvwa/Dockerfile",
+      "message": "Artifact: dvwa/Dockerfile\nType: dockerfile\nVulnerability DS-0026\nSeverity: LOW\nMessage: Add HEALTHCHECK instruction in your Dockerfile\nLink: [DS-0026](https://avd.aquasec.com/misconfig/ds-0026)"
+    },
+    {
+      "sha256": "808c7390351ab244f383e4f8bdc59f2b6782ec17a953064efabdf7080a14eaad",
+      "tool": "Trivy",
+      "ruleId": "DS-0029",
+      "path": "dvwa/Dockerfile",
+      "message": "Artifact: dvwa/Dockerfile\nType: dockerfile\nVulnerability DS-0029\nSeverity: HIGH\nMessage: '--no-install-recommends' flag is missed: 'apt-get update  && export DEBIAN_FRONTEND=noninteractive  && apt-get install -y zlib1g-dev libpng-dev libjpeg-dev libfreetype6-dev iputils-ping git zip unzip 7zip   && apt-get clean -y && rm -rf /var/lib/apt/lists/*  && docker-php-ext-configure gd --with-jpeg --with-freetype  && a2enmod rewrite  && docker-php-ext-install gd mysqli pdo pdo_mysql'\nLink: [DS-0029](https://avd.aquasec.com/misconfig/ds-0029)"
+    },
+    {
+      "sha256": "c713799d968412a4e5f7400ce013ee6cae8a22ce9adb1dc6cd7db1dcae10e02e",
+      "tool": "gitleaks",
+      "ruleId": "generic-api-key",
+      "path": "dvwa/vulnerabilities/csrf/help/help.php",
+      "message": "generic-api-key has detected secret for file dvwa/vulnerabilities/csrf/help/help.php at commit 78fbe77de1a2f32fd37cabc45b919b411a63c504."
+    },
+    {
+      "sha256": "1d576144c21cc024c6456a6ca896274e7fb09bbf22aa591786e6f9806da8fe02",
+      "tool": "gitleaks",
+      "ruleId": "generic-api-key",
+      "path": "dvwa/vulnerabilities/csrf/help/help.php",
+      "message": "generic-api-key has detected secret for file dvwa/vulnerabilities/csrf/help/help.php."
+    }
+  ]
+}
