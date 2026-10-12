@@ -1,6 +1,8 @@
 node_modules/
 dist/
 npm-debug.log*
+.baseline-scan/
 progress.md
 issues.md
 plan.md
+__pycache__/
