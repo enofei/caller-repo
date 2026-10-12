@@ -16,7 +16,7 @@ signing policy, which both repositories enforce identically.
 jobs:
   build-and-test:
     name: Build & Test
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@b9eab3ad9e5ab9a2d42187c12595e62f35990005  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@57caa3009d1945b109342dc39bc2c7884d779894  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@b9eab3ad9e5ab9a2d42187c12595e62f35990005  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@57caa3009d1945b109342dc39bc2c7884d779894  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@b9eab3ad9e5ab9a2d42187c12595e62f35990005  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@57caa3009d1945b109342dc39bc2c7884d779894  # v1.0.0
     with:
       mode: 'enforce-full'
       policy-path: 'policy/'
