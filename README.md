@@ -16,7 +16,7 @@ signing policy, which both repositories enforce identically.
 jobs:
   build-and-test:
     name: Build & Test
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@0fadd936602fa74e09168fabff03d45e63ee9c2a  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@0fadd936602fa74e09168fabff03d45e63ee9c2a  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@0fadd936602fa74e09168fabff03d45e63ee9c2a  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
     with:
       mode: 'enforce-full'
       policy-path: 'policy/'
@@ -73,10 +73,16 @@ On every pull request, three jobs run:
 
 There are **no path exemptions**: dvwa findings are scanned and evaluated like
 everything else. Known findings are fingerprinted in `policy/baseline.json`
-(sha256 of tool+rule+path+message) and suppressed in every mode; anything new —
-first-party or dvwa — blocks under enforcement. `main` is clamped to
-`enforce-full` inside the reusable workflow, so callers cannot relax the mode
-for merges. Malformed or missing scan results or baseline fail the gate (red,
+(sha256 of tool+rule+path+message) and suppressed in every mode **off `main`**;
+anything new — first-party or dvwa — blocks under enforcement. On `main` the
+reusable workflow **bypasses the baseline entirely** (empty fingerprints) *and*
+clamps the mode to `enforce-full`, so no risk is ever accepted there: any
+finding at all turns `Policy / Gate` red — for PRs targeting `main` (merge
+blocked) and for every push landing on `main`. The repository is therefore in a
+deliberate **zero-tolerance freeze**: with dvwa's 51 known findings present,
+every `main`-bound gate is red by design until that content is removed or
+fixed; merging to `main` during the freeze requires the break-glass runbook
+(below). Malformed or missing scan results or baseline fail the gate (red,
 never green). Required status checks on `main`: `Policy / Gate`,
 `SAST / Semgrep`, `SAST / Gitleaks`, `SAST / Trivy`,
 `SAST / Dependency Review`, and `SAST / Actionlint` (break-glass runbook: below).
@@ -88,13 +94,13 @@ every push to `dev` runs a `warn` smoke. Those runs use distinct check names
 checks.
 
 `ci.yml` also triggers on `push` to `main`: every commit that lands gets its
-own clamped `enforce-full` run, with `Policy / Gate` reported directly on
-`main`'s HEAD. This is the **post-landing tripwire** — content reaching
-`main` outside the normal PR gate (e.g. during break-glass) turns the check
-red the moment it lands, giving an alertable per-commit record. It is
-detection, not prevention: GitHub checks run asynchronously and cannot
-reject the push itself; pre-push prevention is the blanket `GH006` rule
-above (any unchecked push is refused).
+own run with the baseline bypassed and mode clamped to `enforce-full`, with
+`Policy / Gate` reported directly on `main`'s HEAD. While accepted-risk content
+lives in the tree this run is **red by design** — the permanent, alertable
+record that `main` holds vulnerabilities, and the immediate red flag for
+anything landing through break-glass. GitHub checks run asynchronously, so
+findings never reject the push itself; pre-push prevention is the blanket
+`GH006` rule above (any unchecked push is refused).
 
 ## Security model
 
@@ -104,11 +110,11 @@ Protection works at two layers: the application and the repository itself.
 
 | Threat | Control |
 |---|---|
-| Vulnerable code (injection, unsafe `eval`, ...) committed | Semgrep + Gitleaks + Trivy scan every PR; `Policy / Gate` blocks any finding not in the baseline before merge |
+| Vulnerable code (injection, unsafe `eval`, ...) committed | Semgrep + Gitleaks + Trivy scan every PR; `Policy / Gate` blocks any finding not in the baseline before merge; `main`-bound PRs and `main` runs ignore the baseline — any finding fails the gate (zero-tolerance freeze) |
 | Hardcoded secrets committed | Gitleaks scans worktree + history every PR; Push Protection as a second layer |
 | Known-vulnerable dependencies | `npm audit` fails the build; Trivy reads lockfiles without building; Dependency Review blocks PRs that introduce vulnerable deps; Dependabot opens update PRs (7-day cooldown) |
 | IaC / Dockerfile / workflow misconfigurations | Trivy misconfig scanner (checks frozen in the digest-pinned binary) |
-| Findings in intentional test content | no exemptions: known dvwa findings live in `policy/baseline.json` (reviewed, fingerprinted); new ones block like anything else |
+| Findings in intentional test content | no exemptions: known dvwa findings live in `policy/baseline.json` (reviewed, fingerprinted) and gate merges off `main`; on `main` every finding — baseline or new — fails the gate (freeze) |
 
 ### What protects the repository (zero-trust CI)
 
@@ -125,7 +131,7 @@ Protection works at two layers: the application and the repository itself.
 | Commit forgery | SSH-signed commits required, administrators included |
 | History rewrite | force-push and branch deletion disabled on `main` |
 | Gate failing open (missing results, missing baseline, invalid mode) | fail-closed: any anomaly = red, never green |
-| Loosening the gate on merges | `main` is hard-clamped to `enforce-full` in the reusable workflow; baseline additions are reviewed in signed PRs |
+| Loosening the gate on merges | `main` is hard-clamped to `enforce-full` *and* bypasses the baseline in the reusable workflow; baseline additions are reviewed in signed PRs (they affect off-`main` gating only) |
 
 ### If a secret is ever committed (rotation runbook)
 
@@ -180,8 +186,10 @@ flowchart TD
 
 ### Break-glass runbook (required status checks on main)
 
-With `enforce_admins: true` + required checks, a gate outage blocks all
-merges; the UI cannot bypass (`--admin` is refused too). Recovery:
+With `enforce_admins: true` + required checks, a red gate blocks all merges;
+the UI cannot bypass (`--admin` is refused too). During the zero-tolerance
+freeze this is by design, and the sequence below is the sanctioned way to land
+an intentional change on `main` anyway. It doubles as gate-outage recovery:
 
 ```bash
 # 1. remove ONLY the status-check requirement (signatures stay intact)
@@ -195,7 +203,7 @@ gh api repos/enofei/caller-repo/branches/main/protection > /tmp/before.json
 #    build PUT body from before.json (all enable-flags verbatim) with
 #    "required_status_checks": {"strict": true, "contexts": [
 #      "Policy / Gate", "SAST / Semgrep", "SAST / Gitleaks",
-#      "SAST / Trivy", "SAST / Dependency Review"]}
+#      "SAST / Trivy", "SAST / Dependency Review", "SAST / Actionlint"]}
 gh api -X PUT repos/enofei/caller-repo/branches/main/protection --input /tmp/body.json
 gh api repos/enofei/caller-repo/branches/main/protection \
   --jq '{admins: .enforce_admins.enabled, sigs: .required_signatures.enabled, checks: .required_status_checks.contexts, force: .allow_force_pushes.enabled}'
@@ -204,10 +212,11 @@ gh api repos/enofei/caller-repo/branches/main/protection \
 Never touch `required_signatures` to solve a gate problem: only
 `required_status_checks` is ever added or removed.
 
-Stripping the requirement removes prevention, not detection: `ci.yml` still
-triggers on pushes to `main`, so every commit that lands during the window
-is scanned under `enforce-full` — a red `Policy / Gate` on `main`'s HEAD
-means revert immediately, before re-enabling checks.
+Stripping the requirement removes prevention, not the scan: `ci.yml` still
+triggers on pushes to `main`, and the baseline bypass still applies — while
+accepted-risk content exists, a red `Policy / Gate` on `main`'s HEAD is the
+expected state, not an alert. Investigate only if a finding is *new* relative
+to the baseline (i.e. first-party or a newly introduced dvwa path).
 
 ### Required-review gate (advisory until a second identity exists)
 
