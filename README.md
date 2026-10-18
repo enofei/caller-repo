@@ -106,11 +106,27 @@ Protection works at two layers: the application and the repository itself.
 | Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep, Gitleaks, and Trivy run from digest-pinned containers |
 | Poisoned rule source at scan time | Semgrep rules vendored in `policy/semgrep-rules/` (hash in `SOURCE.txt`); Trivy misconfig checks frozen in the pinned binary; `.gitleaksignore` reviewed like code |
 | Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
+| Committed secrets | Push Protection blocks known provider formats at push; Secret Scanning alerts on anything that lands; Gitleaks double-covers worktree + history on every PR |
 | Direct push of unchecked code to `main` | required status checks + signatures; rejected with `GH006` (verified by test) |
+| Single-key self-merge of gate changes | 1 code-owner approval required (`.github/CODEOWNERS`), stale reviews dismissed on new pushes |
 | Commit forgery | SSH-signed commits required, administrators included |
 | History rewrite | force-push and branch deletion disabled on `main` |
 | Gate failing open (missing results, missing baseline, invalid mode) | fail-closed: any anomaly = red, never green |
 | Loosening the gate on merges | `main` is hard-clamped to `enforce-full` in the reusable workflow; baseline additions are reviewed in signed PRs |
+
+### If a secret is ever committed (rotation runbook)
+
+1. **Rotate first** — provider console/API, before touching git. Assume the
+   token is burned the moment it exists in any commit.
+2. Push Protection normally rejects known formats at push; if it didn't
+   (novel format, private key), Secret Scanning will alert — open the alert
+   and follow its provider-specific remediation link.
+3. Remove from history: `git filter-repo --replace-text` on `dev`, force-push
+   **`dev` only** (main forbids force-pushes by design; if it reached `main`,
+   rotate + open an incident note — history rewrite of `main` is not an option).
+4. Verify: Secret Scanning alerts page empty; `SAST / Gitleaks` green on the
+   next PR; add the fingerprint to `.gitleaksignore` only if it is a
+   documented placeholder, never a real credential.
 
 ### Defense in depth
 

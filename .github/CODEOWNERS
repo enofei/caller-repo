@@ -1,0 +1,4 @@
+# Default owners — every path requires review from an owner.
+# Enforced on main via required_pull_request_reviews
+# (require_code_owner_reviews: true).
+*       @enofei
