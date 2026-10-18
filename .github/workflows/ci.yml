@@ -37,5 +37,5 @@ jobs:
       actions: read
     uses: enofei/reusable-build-test/.github/workflows/policy.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
     with:
-      mode: 'enforce-full'
+      mode: ${{ github.base_ref == 'dev' && 'warn' || 'enforce-full' }}
       policy-path: 'policy/'

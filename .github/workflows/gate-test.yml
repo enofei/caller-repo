@@ -1,22 +1,12 @@
 name: Gate Test
 
-# Mode-testing vehicle for the policy gate (dev branch is for testing).
-# Runs the same SAST + gate pipeline as ci.yml but with check names that can
-# never satisfy main's required status checks, so a test run cannot race or
-# substitute for a real PR gate. workflow_dispatch picks the mode; pushes to
-# dev run a warn-mode smoke so scanner/gate breakage surfaces immediately.
+# Advisory smoke harness for the policy gate. Dev is warn-only by policy:
+# every run here (dispatch or push to dev) evaluates in warn mode, and the
+# check names (SAST Test / *, Gate Test / Gate) can never satisfy main's
+# required status checks, so a test run cannot race or substitute for a real
+# PR gate. Enforce-full never runs on dev — main is the only enforce-full ref.
 on:
   workflow_dispatch:
-    inputs:
-      mode:
-        description: 'Gate mode to exercise'
-        required: true
-        type: choice
-        options:
-          - warn
-          - enforce-critical
-          - enforce-full
-        default: warn
   push:
     branches: [dev]
 
@@ -42,5 +32,5 @@ jobs:
       actions: read
     uses: enofei/reusable-build-test/.github/workflows/policy.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
     with:
-      mode: ${{ github.event_name == 'workflow_dispatch' && inputs.mode || 'warn' }}
+      mode: 'warn'
       policy-path: 'policy/'

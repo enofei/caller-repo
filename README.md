@@ -40,7 +40,7 @@ jobs:
       actions: read
     uses: enofei/reusable-build-test/.github/workflows/policy.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
     with:
-      mode: 'enforce-full'
+      mode: ${{ github.base_ref == 'dev' && 'warn' || 'enforce-full' }}
       policy-path: 'policy/'
 ```
 
@@ -71,27 +71,34 @@ On every pull request, three jobs run:
 | `enforce-critical` | blocks on findings at error level |
 | `enforce-full` | blocks on every finding, any level |
 
+Repository policy: **`dev` runs `warn` only** (never any enforce mode), **`main`
+runs `enforce-full` only**. `enforce-critical` is supported by the reusable
+gate but unused in this repository.
+
 There are **no path exemptions**: dvwa findings are scanned and evaluated like
 everything else. Known findings are fingerprinted in `policy/baseline.json`
-(sha256 of tool+rule+path+message) and suppressed in every mode **off `main`**;
-anything new — first-party or dvwa — blocks under enforcement. On `main` the
-reusable workflow **bypasses the baseline entirely** (empty fingerprints) *and*
-clamps the mode to `enforce-full`, so no risk is ever accepted there: any
-finding at all turns `Policy / Gate` red — for PRs targeting `main` (merge
-blocked) and for every push landing on `main`. The repository is therefore in a
-deliberate **zero-tolerance freeze**: with dvwa's 51 known findings present,
-every `main`-bound gate is red by design until that content is removed or
-fixed; merging to `main` during the freeze requires the break-glass runbook
-(below). Malformed or missing scan results or baseline fail the gate (red,
-never green). Required status checks on `main`: `Policy / Gate`,
-`SAST / Semgrep`, `SAST / Gitleaks`, `SAST / Trivy`,
-`SAST / Dependency Review`, and `SAST / Actionlint` (break-glass runbook: below).
+(sha256 of tool+rule+path+message), but that ratchet only governs refs **off
+`main`**. On `main` the reusable workflow **bypasses the baseline entirely**
+(empty fingerprints) *and* clamps the mode to `enforce-full`, so no risk is
+ever accepted there: any finding at all — old (baseline) or new — turns
+`Policy / Gate` red, for PRs targeting `main` (merge blocked) and for every
+push landing on `main`.
 
-Gate modes are exercised on `dev` through `.github/workflows/gate-test.yml`:
-`workflow_dispatch` picks `warn` / `enforce-critical` / `enforce-full`, and
-every push to `dev` runs a `warn` smoke. Those runs use distinct check names
-(`SAST Test / *`, `Gate Test / Gate`) that can never satisfy `main`'s required
-checks.
+Because of that, the repository is in a deliberate **zero-tolerance freeze**:
+with dvwa's 51 known findings present, every `main`-bound gate is red by
+design, and **nothing merges to `main` while it is red** — never merge a red
+pipeline. The freeze lifts only when the findings are resolved (fixed or the
+accepted-risk content removed from the tree). Malformed or missing scan
+results or baseline fail the gate (red, never green). Required status checks
+on `main`: `Policy / Gate`, `SAST / Semgrep`, `SAST / Gitleaks`,
+`SAST / Trivy`, `SAST / Dependency Review`, and `SAST / Actionlint`.
+
+PR gate modes split by base branch: PRs targeting `dev` run **`warn`**
+(advisory — `dev` passes regardless of findings; they annotate the run only),
+while PRs targeting `main` run **`enforce-full`** (plus the baseline bypass
+above). Gate-test runs **`warn` only** — manual dispatch and the push smoke on
+`dev` alike — with distinct check names (`SAST Test / *`, `Gate Test / Gate`)
+that can never satisfy `main`'s required checks.
 
 `ci.yml` also triggers on `push` to `main`: every commit that lands gets its
 own run with the baseline bypassed and mode clamped to `enforce-full`, with
@@ -156,8 +163,8 @@ fail-secure defaults, and tooling verified before it runs.
 
 ## Branch and signing policy
 
-- `dev` is where work happens. Push to it freely; every push runs the
-  `Gate Test` warn-mode smoke, and `workflow_dispatch` exercises any gate mode.
+- `dev` is where work happens. Push to it freely; every push (and manual
+  `workflow_dispatch`) runs the `Gate Test` **warn-only** smoke.
 - `main` accepts only commits with verified signatures. Branch protection applies to
   administrators too, so unsigned or unverified pushes are rejected by GitHub with `GH006`.
 - Six status checks are required on `main`: `Policy / Gate`, `SAST / Semgrep`,
@@ -187,9 +194,10 @@ flowchart TD
 ### Break-glass runbook (required status checks on main)
 
 With `enforce_admins: true` + required checks, a red gate blocks all merges;
-the UI cannot bypass (`--admin` is refused too). During the zero-tolerance
-freeze this is by design, and the sequence below is the sanctioned way to land
-an intentional change on `main` anyway. It doubles as gate-outage recovery:
+the UI cannot bypass (`--admin` is refused too). That is the policy: never
+merge a red pipeline — the sequence below is **only** for a gate *outage*
+(false positives, broken infrastructure), never to land content the gate
+rejected. It doubles as outage recovery:
 
 ```bash
 # 1. remove ONLY the status-check requirement (signatures stay intact)
