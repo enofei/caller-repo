@@ -1,14 +1,11 @@
 package main
 
-# SAST policy gate. Input: {"mode": warn|enforce-critical|enforce-full,
-# "sarif": <merged SARIF from all scanners>, "baseline": {"fingerprints": [...]}}.
-#
-# There are no path exemptions: every finding from every scanner is evaluated.
-# Findings whose fingerprint (sha256 of tool|ruleId|path|message) is listed in
-# the baseline are suppressed in every mode and surfaced as warnings. Anything
-# new blocks under enforcement: enforce-critical denies first-party findings at
-# level "error"; enforce-full denies every finding, any level. Malformed input,
-# invalid mode, or a malformed baseline denies (fail-closed).
+# SAST policy gate. Input: {mode, sarif: <merged SARIF>, baseline: {fingerprints: []}}.
+# No path exemptions: every finding from every scanner is evaluated. Baseline
+# fingerprints (sha256 of tool|ruleId|path|message) suppress known findings off
+# main; policy.yml gives main an empty baseline (no risk accepted).
+# enforce-critical denies error-level findings, enforce-full denies any level.
+# Malformed input, invalid mode, or malformed baseline denies (fail-closed).
 
 valid_modes := {"warn", "enforce-critical", "enforce-full"}
 

@@ -1,10 +1,7 @@
 name: Gate Test
 
-# Advisory smoke harness for the policy gate. Dev is warn-only by policy:
-# every run here (dispatch or push to dev) evaluates in warn mode, and the
-# check names (SAST Test / *, Gate Test / Gate) can never satisfy main's
-# required status checks, so a test run cannot race or substitute for a real
-# PR gate. Enforce-full never runs on dev — main is the only enforce-full ref.
+# Advisory warn-only smoke for the policy gate (dev never runs enforce modes).
+# Check names can never satisfy main's required status checks.
 on:
   workflow_dispatch:
   push:
@@ -19,7 +16,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@fee2b6b36444d90fe66821b6c362eb400dfe29e8  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -30,7 +27,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@d1e765656c654311a8ad13a63a3326c9142ef9de  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@fee2b6b36444d90fe66821b6c362eb400dfe29e8  # v1.0.0
     with:
       mode: 'warn'
       policy-path: 'policy/'
