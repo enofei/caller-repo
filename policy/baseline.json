@@ -337,11 +337,25 @@
       "message": "Artifact: dvwa/Dockerfile\nType: dockerfile\nVulnerability DS-0029\nSeverity: HIGH\nMessage: '--no-install-recommends' flag is missed: 'apt-get update  && export DEBIAN_FRONTEND=noninteractive  && apt-get install -y zlib1g-dev libpng-dev libjpeg-dev libfreetype6-dev iputils-ping git zip unzip 7zip   && apt-get clean -y && rm -rf /var/lib/apt/lists/*  && docker-php-ext-configure gd --with-jpeg --with-freetype  && a2enmod rewrite  && docker-php-ext-install gd mysqli pdo pdo_mysql'\nLink: [DS-0029](https://avd.aquasec.com/misconfig/ds-0029)"
     },
     {
+      "sha256": "e7f9f2cda47601db94bafe32207f24f369c47d828cfbd51446690063f55bc8e8",
+      "tool": "Trivy",
+      "ruleId": "CVE-2026-109413",
+      "path": "dvwa/vulnerabilities/api/composer.lock",
+      "message": "Package: symfony/yaml\nInstalled Version: v8.1.2\nVulnerability CVE-2026-109413\nSeverity: UNKNOWN\nFixed Version: 7.2.0, 8.1.6, 3.0.0, 4.0.0, 5.4.54, 6.4.45, 5.4.0, 6.4.0, 7.3.0, 5.2.0, 6.1.0, 6.2.0, 7.1.0, 7.4.0, 7.4.18, 8.1.0, 5.0.0, 5.1.0, 5.3.0, 6.3.0\nLink: [CVE-2026-109413](https://avd.aquasec.com/nvd/cve-2026-109413)"
+    },
+    {
       "sha256": "c713799d968412a4e5f7400ce013ee6cae8a22ce9adb1dc6cd7db1dcae10e02e",
       "tool": "gitleaks",
       "ruleId": "generic-api-key",
       "path": "dvwa/vulnerabilities/csrf/help/help.php",
       "message": "generic-api-key has detected secret for file dvwa/vulnerabilities/csrf/help/help.php at commit 78fbe77de1a2f32fd37cabc45b919b411a63c504."
+    },
+    {
+      "sha256": "1d576144c21cc024c6456a6ca896274e7fb09bbf22aa591786e6f9806da8fe02",
+      "tool": "gitleaks",
+      "ruleId": "generic-api-key",
+      "path": "dvwa/vulnerabilities/csrf/help/help.php",
+      "message": "generic-api-key has detected secret for file dvwa/vulnerabilities/csrf/help/help.php."
     }
   ]
 }
