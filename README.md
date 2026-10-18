@@ -108,7 +108,7 @@ Protection works at two layers: the application and the repository itself.
 | Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
 | Committed secrets | Push Protection blocks known provider formats at push; Secret Scanning alerts on anything that lands; Gitleaks double-covers worktree + history on every PR |
 | Direct push of unchecked code to `main` | required status checks + signatures; rejected with `GH006` (verified by test) |
-| Single-key self-merge of gate changes | 1 code-owner approval required (`.github/CODEOWNERS`), stale reviews dismissed on new pushes |
+| Single-key self-merge of gate changes | `.github/CODEOWNERS` documents ownership; a hard 1-code-owner-approval gate is configured-but-off (GitHub cannot self-approve, so it needs a second identity — enable snippet below) |
 | Commit forgery | SSH-signed commits required, administrators included |
 | History rewrite | force-push and branch deletion disabled on `main` |
 | Gate failing open (missing results, missing baseline, invalid mode) | fail-closed: any anomaly = red, never green |
@@ -190,6 +190,27 @@ gh api repos/enofei/caller-repo/branches/main/protection \
 
 Never touch `required_signatures` to solve a gate problem: only
 `required_status_checks` is ever added or removed.
+
+### Required-review gate (advisory until a second identity exists)
+
+A hard code-owner review gate was proven live (PR #22 blocked as
+`REVIEW_REQUIRED`) but GitHub refuses author self-approval, so with one
+account it would block every merge. `.github/CODEOWNERS` stays as the
+ownership map; flip this on the day a second reviewer identity exists.
+Full `PUT /protection` as in the runbook above, with this key added:
+
+```json
+"required_pull_request_reviews": {
+  "dismiss_stale_reviews": true,
+  "require_code_owner_reviews": true,
+  "required_approving_review_count": 1,
+  "require_last_push_approval": false
+}
+```
+
+`require_last_push_approval: false` keeps the last-pusher rule out of it;
+the author still cannot approve their own PR — the second identity is the
+point.
 
 ## Application layout
 
