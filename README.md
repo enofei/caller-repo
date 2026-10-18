@@ -106,11 +106,27 @@ Protection works at two layers: the application and the repository itself.
 | Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep, Gitleaks, and Trivy run from digest-pinned containers |
 | Poisoned rule source at scan time | Semgrep rules vendored in `policy/semgrep-rules/` (hash in `SOURCE.txt`); Trivy misconfig checks frozen in the pinned binary; `.gitleaksignore` reviewed like code |
 | Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
+| Committed secrets | Push Protection blocks known provider formats at push; Secret Scanning alerts on anything that lands; Gitleaks double-covers worktree + history on every PR |
 | Direct push of unchecked code to `main` | required status checks + signatures; rejected with `GH006` (verified by test) |
+| Single-key self-merge of gate changes | `.github/CODEOWNERS` documents ownership; a hard 1-code-owner-approval gate is configured-but-off (GitHub cannot self-approve, so it needs a second identity — enable snippet below) |
 | Commit forgery | SSH-signed commits required, administrators included |
 | History rewrite | force-push and branch deletion disabled on `main` |
 | Gate failing open (missing results, missing baseline, invalid mode) | fail-closed: any anomaly = red, never green |
 | Loosening the gate on merges | `main` is hard-clamped to `enforce-full` in the reusable workflow; baseline additions are reviewed in signed PRs |
+
+### If a secret is ever committed (rotation runbook)
+
+1. **Rotate first** — provider console/API, before touching git. Assume the
+   token is burned the moment it exists in any commit.
+2. Push Protection normally rejects known formats at push; if it didn't
+   (novel format, private key), Secret Scanning will alert — open the alert
+   and follow its provider-specific remediation link.
+3. Remove from history: `git filter-repo --replace-text` on `dev`, force-push
+   **`dev` only** (main forbids force-pushes by design; if it reached `main`,
+   rotate + open an incident note — history rewrite of `main` is not an option).
+4. Verify: Secret Scanning alerts page empty; `SAST / Gitleaks` green on the
+   next PR; add the fingerprint to `.gitleaksignore` only if it is a
+   documented placeholder, never a real credential.
 
 ### Defense in depth
 
@@ -174,6 +190,27 @@ gh api repos/enofei/caller-repo/branches/main/protection \
 
 Never touch `required_signatures` to solve a gate problem: only
 `required_status_checks` is ever added or removed.
+
+### Required-review gate (advisory until a second identity exists)
+
+A hard code-owner review gate was proven live (PR #22 blocked as
+`REVIEW_REQUIRED`) but GitHub refuses author self-approval, so with one
+account it would block every merge. `.github/CODEOWNERS` stays as the
+ownership map; flip this on the day a second reviewer identity exists.
+Full `PUT /protection` as in the runbook above, with this key added:
+
+```json
+"required_pull_request_reviews": {
+  "dismiss_stale_reviews": true,
+  "require_code_owner_reviews": true,
+  "required_approving_review_count": 1,
+  "require_last_push_approval": false
+}
+```
+
+`require_last_push_approval: false` keeps the last-pusher rule out of it;
+the author still cannot approve their own PR — the second identity is the
+point.
 
 ## Application layout
 
