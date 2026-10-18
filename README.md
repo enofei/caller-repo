@@ -16,7 +16,7 @@ signing policy, which both repositories enforce identically.
 jobs:
   build-and-test:
     name: Build & Test
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@57caa3009d1945b109342dc39bc2c7884d779894  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@a583859442317b7cf696ae4d117822b1867fbdd8  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@57caa3009d1945b109342dc39bc2c7884d779894  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@a583859442317b7cf696ae4d117822b1867fbdd8  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@57caa3009d1945b109342dc39bc2c7884d779894  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@a583859442317b7cf696ae4d117822b1867fbdd8  # v1.0.0
     with:
       mode: 'enforce-full'
       policy-path: 'policy/'
@@ -48,7 +48,9 @@ On every pull request, three jobs run:
 
 1. **Build & Test**: install from the lockfile, build, test, audit deps.
 2. **SAST**: four scanners, all static (no build), each uploading SARIF to code
-   scanning and archiving an artifact for the gate:
+   scanning and archiving an artifact for the gate; plus **Actionlint**
+   over the caller's own workflows (pinned binary, shellcheck + pyflakes
+   on embedded scripts — job-level, no SARIF path):
    - **Semgrep** — rule bundle frozen in `policy/semgrep-rules/` (nothing fetched
      from the network at scan time)
    - **Gitleaks** — secrets, both the worktree and the full git history;
@@ -76,8 +78,8 @@ first-party or dvwa — blocks under enforcement. `main` is clamped to
 `enforce-full` inside the reusable workflow, so callers cannot relax the mode
 for merges. Malformed or missing scan results or baseline fail the gate (red,
 never green). Required status checks on `main`: `Policy / Gate`,
-`SAST / Semgrep`, `SAST / Gitleaks`, `SAST / Trivy`, and
-`SAST / Dependency Review` (break-glass runbook: below).
+`SAST / Semgrep`, `SAST / Gitleaks`, `SAST / Trivy`,
+`SAST / Dependency Review`, and `SAST / Actionlint` (break-glass runbook: below).
 
 Gate modes are exercised on `dev` through `.github/workflows/gate-test.yml`:
 `workflow_dispatch` picks `warn` / `enforce-critical` / `enforce-full`, and
@@ -103,7 +105,8 @@ Protection works at two layers: the application and the repository itself.
 
 | Threat | Control |
 |---|---|
-| Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep, Gitleaks, and Trivy run from digest-pinned containers |
+| Tampered actions or scanner images | every `uses:` SHA-pinned with `# vX.Y.Z`; Semgrep, Gitleaks, and Trivy run from digest-pinned containers; actionlint binary sha256-verified before exec |
+| Workflow injection / broken expressions | Actionlint lints `.github/workflows/` on every run (expression checks + shellcheck/pyflakes on `run:` blocks) |
 | Poisoned rule source at scan time | Semgrep rules vendored in `policy/semgrep-rules/` (hash in `SOURCE.txt`); Trivy misconfig checks frozen in the pinned binary; `.gitleaksignore` reviewed like code |
 | Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
 | Committed secrets | Push Protection blocks known provider formats at push; Secret Scanning alerts on anything that lands; Gitleaks double-covers worktree + history on every PR |
@@ -141,9 +144,9 @@ fail-secure defaults, and tooling verified before it runs.
   `Gate Test` warn-mode smoke, and `workflow_dispatch` exercises any gate mode.
 - `main` accepts only commits with verified signatures. Branch protection applies to
   administrators too, so unsigned or unverified pushes are rejected by GitHub with `GH006`.
-- Five status checks are required on `main`: `Policy / Gate`, `SAST / Semgrep`,
-  `SAST / Gitleaks`, `SAST / Trivy`, and `SAST / Dependency Review`
-  (strict, so the branch must be up to date). A direct push of a commit that has
+- Six status checks are required on `main`: `Policy / Gate`, `SAST / Semgrep`,
+  `SAST / Gitleaks`, `SAST / Trivy`, `SAST / Dependency Review`, and
+  `SAST / Actionlint` (strict, so the branch must be up to date). A direct push of a commit that has
   not passed them is rejected with `GH006`; the admin bypass flag is refused as
   well. In practice, changes land through a pull request. Break-glass (gate
   outage): see the runbook below.
