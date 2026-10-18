@@ -16,7 +16,7 @@ signing policy, which both repositories enforce identically.
 jobs:
   build-and-test:
     name: Build & Test
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@a583859442317b7cf696ae4d117822b1867fbdd8  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@0fadd936602fa74e09168fabff03d45e63ee9c2a  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@a583859442317b7cf696ae4d117822b1867fbdd8  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@0fadd936602fa74e09168fabff03d45e63ee9c2a  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@a583859442317b7cf696ae4d117822b1867fbdd8  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@0fadd936602fa74e09168fabff03d45e63ee9c2a  # v1.0.0
     with:
       mode: 'enforce-full'
       policy-path: 'policy/'
@@ -87,6 +87,15 @@ every push to `dev` runs a `warn` smoke. Those runs use distinct check names
 (`SAST Test / *`, `Gate Test / Gate`) that can never satisfy `main`'s required
 checks.
 
+`ci.yml` also triggers on `push` to `main`: every commit that lands gets its
+own clamped `enforce-full` run, with `Policy / Gate` reported directly on
+`main`'s HEAD. This is the **post-landing tripwire** — content reaching
+`main` outside the normal PR gate (e.g. during break-glass) turns the check
+red the moment it lands, giving an alertable per-commit record. It is
+detection, not prevention: GitHub checks run asynchronously and cannot
+reject the push itself; pre-push prevention is the blanket `GH006` rule
+above (any unchecked push is refused).
+
 ## Security model
 
 Protection works at two layers: the application and the repository itself.
@@ -111,6 +120,7 @@ Protection works at two layers: the application and the repository itself.
 | Tampered policy toolchain | conftest verified against an embedded SHA-256 before execution |
 | Committed secrets | Push Protection blocks known provider formats at push; Secret Scanning alerts on anything that lands; Gitleaks double-covers worktree + history on every PR |
 | Direct push of unchecked code to `main` | required status checks + signatures; rejected with `GH006` (verified by test) |
+| Vulnerable content landing while checks are stripped (break-glass) | push trigger rescans every landing commit under `enforce-full`; red `Policy / Gate` on `main`'s HEAD flags it for immediate revert (post-landing tripwire) |
 | Single-key self-merge of gate changes | `.github/CODEOWNERS` documents ownership; a hard 1-code-owner-approval gate is configured-but-off (GitHub cannot self-approve, so it needs a second identity — enable snippet below) |
 | Commit forgery | SSH-signed commits required, administrators included |
 | History rewrite | force-push and branch deletion disabled on `main` |
@@ -193,6 +203,11 @@ gh api repos/enofei/caller-repo/branches/main/protection \
 
 Never touch `required_signatures` to solve a gate problem: only
 `required_status_checks` is ever added or removed.
+
+Stripping the requirement removes prevention, not detection: `ci.yml` still
+triggers on pushes to `main`, so every commit that lands during the window
+is scanned under `enforce-full` — a red `Policy / Gate` on `main`'s HEAD
+means revert immediately, before re-enabling checks.
 
 ### Required-review gate (advisory until a second identity exists)
 
