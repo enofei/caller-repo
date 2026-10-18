@@ -1,15 +1,8 @@
 #!/usr/bin/env bash
-# Regenerates policy/baseline.json by re-running the three SAST scanners
-# locally (docker, same digest-pinned images as sast.yml) and folding their
-# SARIFs through scripts/sarif_to_baseline.py.
-#
-# The baseline only keeps findings under vendored paths (dvwa/): first-party
-# findings must be fixed or allowlisted at the tool level, never baselined.
-# Requirements: docker, network access (semgrep image pull + trivy vuln DB),
-# the vendored rule bundle at policy/semgrep-rules.
-#
-# Review the baseline diff like code: every added fingerprint is a finding
-# that stops blocking once merged.
+# Regenerates policy/baseline.json: re-runs the three scanners locally
+# (digest-pinned images) -> SARIF -> scripts/sarif_to_baseline.py.
+# Only vendored paths (dvwa/) are baselined; first-party findings must be
+# fixed, never baselined. Requires docker, network, policy/semgrep-rules.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
