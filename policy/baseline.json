@@ -113,6 +113,13 @@
       "message": "Make sure comparisons involving md5 values are strict (use `===` not `==`) to avoid type juggling issues"
     },
     {
+      "sha256": "0f1ea8af47e9863df725f6f03a3ac520e1f82d5584c438834fb7be5a73b72ba7",
+      "tool": "Semgrep OSS",
+      "ruleId": "php.lang.security.injection.echoed-request.echoed-request",
+      "path": "dvwa/vulnerabilities/csp/source/jsonp.php",
+      "message": "`Echo`ing user input risks cross-site scripting vulnerability. You should use `htmlentities()` when showing data to users."
+    },
+    {
       "sha256": "2ba993ddbf2d9b23de57a646f3bd851b7852937bb14e6c1b3287ee8178a4c8d6",
       "tool": "Semgrep OSS",
       "ruleId": "php.lang.security.md5-loose-equality.md5-loose-equality",
@@ -335,13 +342,6 @@
       "ruleId": "generic-api-key",
       "path": "dvwa/vulnerabilities/csrf/help/help.php",
       "message": "generic-api-key has detected secret for file dvwa/vulnerabilities/csrf/help/help.php at commit 78fbe77de1a2f32fd37cabc45b919b411a63c504."
-    },
-    {
-      "sha256": "1d576144c21cc024c6456a6ca896274e7fb09bbf22aa591786e6f9806da8fe02",
-      "tool": "gitleaks",
-      "ruleId": "generic-api-key",
-      "path": "dvwa/vulnerabilities/csrf/help/help.php",
-      "message": "generic-api-key has detected secret for file dvwa/vulnerabilities/csrf/help/help.php."
     }
   ]
 }

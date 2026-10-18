@@ -1,22 +1,30 @@
 Vendored Semgrep rules for reproducible, fail-closed SAST scanning.
 
-Source:   https://semgrep.dev/c/auto   (registry bundle backing `--config auto`)
-Fetched:  2026-10-04
-Rules:    1073
-SHA-256:  967e75adeefb181bf0b4355991a8f1206374b9871ec8def30fcb492ad038c026
-          (pristine fetched bundle, before the local edit below)
+Sources (registry configs, all fetched 2026-10-18):
+  base:   https://semgrep.dev/c/auto  (registry bundle backing `--config auto`,
+          first vendored 2026-10-04, kept as-is; registry snapshot then was
+          1073 rules — this repo's vendored copy parses as 1074, consistent
+          with the original vendoring run)
+  added:  https://semgrep.dev/c/p/security-audit    (+13 new rules)
+          https://semgrep.dev/c/p/owasp-top-ten     (+70 new rules)
+          https://semgrep.dev/c/p/github-actions    (+1 new rule)
+  checked, fully covered by the base already (0 new):
+          https://semgrep.dev/c/p/php
+          https://semgrep.dev/c/p/javascript
+          https://semgrep.dev/c/p/nodejs
 
-Local edit after fetching (documented deviation from the pristine bundle):
-  - generic.secrets.security.detected-slack-webhook: the `pattern-not`
-    sentinel URL's third segment was shortened from 24 to 20 `X`
-    characters. The canonical 24-char placeholder matches GitHub's
-    Push Protection webhook format and blocked the push; it is a
-    well-known dummy value, not a secret. Semgrep rule behavior for
-    this repository is unchanged.
+Rules:    1158 (merged 2026-10-18; base wins on duplicate ids)
+SHA-256:  27c112ed8bf2b5418157a1f46f30d6464605477cf0eea7306a89dc6aa37d30aa
+          (merged vendored file, policy/semgrep-rules/auto.yaml)
+
+Local edit (documented deviation from the pristine bundles): none currently —
+the 2026-10-04 slack-webhook sentinel shortening (24 -> 20 `X` chars, see
+git history) is still in place inside the base rules; the 2026-10-18 packs did
+not reintroduce the canonical 24-char placeholder.
 
 Scanned with: semgrep/semgrep:1.179.0 (digest-pinned in reusable sast.yml)
 
 Rules only change via reviewed, SSH-signed PRs to this repository and
-are never fetched from the network at scan time. To refresh, re-fetch
-the bundle, re-apply the sentinel edit if still needed, update this
-header, and include the diff in the PR review.
+are never fetched from the network at scan time. To refresh, re-fetch the
+packs, merge with base-wins dedupe, re-apply the sentinel edit if still
+needed, update this header, and include the diff in the PR review.
