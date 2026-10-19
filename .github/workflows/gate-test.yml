@@ -16,7 +16,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@2ab015ce42d852f756b4ee55688b8ffb17dd4931  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@bbfd7d3c4155a4dd4ce8b5b9bd349a3feceab3b2  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@2ab015ce42d852f756b4ee55688b8ffb17dd4931  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@bbfd7d3c4155a4dd4ce8b5b9bd349a3feceab3b2  # v1.0.0
     with:
       mode: 'warn'
       policy-path: 'policy/'
