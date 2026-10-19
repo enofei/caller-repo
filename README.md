@@ -16,7 +16,7 @@ signing policy, which both repositories enforce identically.
 jobs:
   build-and-test:
     name: Build & Test
-    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@2ab015ce42d852f756b4ee55688b8ffb17dd4931  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/build-test.yml@bbfd7d3c4155a4dd4ce8b5b9bd349a3feceab3b2  # v1.0.0
     with:
       node-version: '24'
       test-command: 'npm run test:ci'
@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
-    uses: enofei/reusable-build-test/.github/workflows/sast.yml@2ab015ce42d852f756b4ee55688b8ffb17dd4931  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/sast.yml@bbfd7d3c4155a4dd4ce8b5b9bd349a3feceab3b2  # v1.0.0
     with:
       semgrep-config: 'policy/semgrep-rules'
 
@@ -38,7 +38,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    uses: enofei/reusable-build-test/.github/workflows/policy.yml@2ab015ce42d852f756b4ee55688b8ffb17dd4931  # v1.0.0
+    uses: enofei/reusable-build-test/.github/workflows/policy.yml@bbfd7d3c4155a4dd4ce8b5b9bd349a3feceab3b2  # v1.0.0
     with:
       mode: ${{ github.base_ref == 'dev' && 'warn' || 'enforce-full' }}
       policy-path: 'policy/'
@@ -71,10 +71,9 @@ On every pull request, three jobs run:
 | `enforce-critical` | blocks on findings at error level |
 | `enforce-full` | blocks on every finding, any level |
 
-Repository policy: **`dev` runs `warn` only** (never any enforce mode), and
-**`main` is temporarily `warn` while thawed** - the enforce-full freeze
-restores immediately after this thaw cycle. `enforce-critical` is supported by
-the reusable gate but unused in this repository.
+Repository policy: **`dev` runs `warn` only** (never any enforce mode), **`main`
+runs `enforce-full` only**. `enforce-critical` is supported by the reusable
+gate but unused in this repository.
 
 There are **no path exemptions**: dvwa findings are scanned and evaluated like
 everything else. Known findings are fingerprinted in `policy/baseline.json`
@@ -96,9 +95,8 @@ on `main`: `Policy / Gate`, `SAST / Semgrep`, `SAST / Gitleaks`,
 
 PR gate modes split by base branch: PRs targeting `dev` run **`warn`**
 (advisory - `dev` passes regardless of findings; they annotate the run only),
-and PRs targeting `main` also run **`warn`** while thawed (baseline bypass is
-inert under `warn`; freeze restores enforce-full after verification). Gate-test
-runs **`warn` only** - manual dispatch and the push smoke on
+while PRs targeting `main` run **`enforce-full`** (plus the baseline bypass
+above). Gate-test runs **`warn` only** - manual dispatch and the push smoke on
 `dev` alike - with distinct check names (`SAST Test / *`, `Gate Test / Gate`)
 that can never satisfy `main`'s required checks.
 
